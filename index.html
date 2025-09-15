@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha Cadastral - ACTECmax</title>
+  <style>
+    :root { --w: 980px; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; background:#f7f7f8; color:#0f172a; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .wrap { max-width: var(--w); margin: 24px auto; background:#fff; border-radius:16px; box-shadow: 0 8px 30px rgba(0,0,0,.06); overflow:hidden; }
+    header { padding:20px 24px; border-bottom:1px solid #e5e7eb; }
+    header h1 { margin:0; font-size: 20px; }
+    header .sub { font-size:13px; color:#475569; margin-top:6px; }
+    section { padding:20px 24px; border-top:1px solid #f1f5f9; }
+    h2 { font-size:16px; margin:0 0 12px 0; color:#111827; }
+    .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
+    .col-12 { grid-column: span 12; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+    label { display:block; font-size:13px; color:#334155; margin-bottom:6px; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], textarea, select {
+      width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; font-size:14px;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .row { margin-bottom:12px; }
+    .muted { font-size:12px; color:#64748b; }
+    .chkrow { display:flex; flex-wrap:wrap; gap:14px; }
+    .chkrow label { display:flex; align-items:center; gap:8px; font-size:14px; color:#334155; }
+    .files input[type="file"] { display:block; margin-top:6px; }
+    .actions { display:flex; gap:12px; padding:20px 24px; border-top:1px solid #e5e7eb; background:#fafafa; }
+    .btn { padding:12px 16px; border:0; border-radius:12px; cursor:pointer; font-weight:600; }
+    .btn-dark { background:#0f172a; color:#fff; }
+    .btn-ghost { background:#fff; color:#0f172a; border:1px solid #cbd5e1; }
+    .ok { display:none; margin:16px 24px; padding:12px; border:1px solid #1a7f37; color:#064e3b; background:#ecfdf5; border-radius:12px; }
+    @media (max-width: 768px) {
+      .wrap { margin: 0; border-radius: 0; }
+      section { padding: 16px; }
+      header { padding: 16px; }
+      .actions { padding: 16px; position: sticky; bottom:0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>ACTECmax Ltda. — Ficha Cadastral</h1>
+      <div class="sub">CNPJ: 04.239.929/0001-29 — Av. Carlos Drummond de Andrade, 1.100 - Jd. Jóquei Clube — Ribeirão Preto - SP — CEP: 14078-660</div>
+    </header>
+
+    <form id="ficha-cadastral" method="POST" action="https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec" enctype="multipart/form-data" target="submitFrame" novalidate>
+      <!-- DADOS DA EMPRESA -->
+      <section>
+        <h2>DADOS DA EMPRESA</h2>
+        <div class="grid">
+          <div class="col-8">
+            <label>Razão Social</label>
+            <input type="text" name="razao_social" required>
+          </div>
+          <div class="col-4">
+            <label>Nome Fantasia</label>
+            <input type="text" name="nome_fantasia" required>
+          </div>
+          <div class="col-4">
+            <label>CNPJ</label>
+            <input type="text" name="cnpj" required>
+          </div>
+          <div class="col-4">
+            <label>Inscrição Estadual</label>
+            <input type="text" name="inscricao_estadual">
+          </div>
+          <div class="col-4">
+            <label>Inscrição Municipal</label>
+            <input type="text" name="inscricao_municipal">
+          </div>
+          <div class="col-3">
+            <label>Suframa</label>
+            <input type="text" name="suframa">
+          </div>
+          <div class="col-3">
+            <label>CNAE (Atividade Principal)</label>
+            <input type="text" name="cnae_principal">
+          </div>
+          <div class="col-3">
+            <label>Data Constituição</label>
+            <input type="date" name="data_constituicao">
+          </div>
+          <div class="col-3">
+            <label>Última alteração Contrato Social</label>
+            <input type="date" name="data_ultima_alteracao">
+          </div>
+          <div class="col-4">
+            <label>Capital Social Registrado</label>
+            <input type="text" name="capital_social">
+          </div>
+          <div class="col-4">
+            <label>Site</label>
+            <input type="text" name="site">
+          </div>
+          <div class="col-4">
+            <label>E-mail (XML)</label>
+            <input type="email" name="email_xml">
+          </div>
+          <div class="col-4">
+            <label>Telefone</label>
+            <input type="tel" name="telefone">
+          </div>
+          <div class="col-4">
+            <label>Celular</label>
+            <input type="tel" name="celular">
+          </div>
+          <div class="col-4">
+            <label>WhatsApp</label>
+            <input type="tel" name="whatsapp">
+          </div>
+          <div class="col-12">
+            <label>Regime Tributário</label>
+            <div class="chkrow">
+              <label><input type="radio" name="regime_tributario" value="Lucro Real">Lucro Real</label>
+              <label><input type="radio" name="regime_tributario" value="Lucro Presumido">Lucro Presumido</label>
+              <label><input type="radio" name="regime_tributario" value="Simples Nacional">Simples Nacional</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label>Possui regime especial de tributação?</label>
+            <div class="chkrow">
+              <label><input type="radio" name="regime_especial" value="Sim">Sim</label>
+              <label><input type="radio" name="regime_especial" value="Não">Não</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label>Se SIM, qual?</label>
+            <input type="text" name="regime_especial_quaL">
+          </div>
+          <div class="col-12">
+            <label>Possui suspensão tributária (insumos p/ industrialização)?</label>
+            <div class="chkrow">
+              <label><input type="radio" name="suspensao_tributaria" value="Sim">Sim</label>
+              <label><input type="radio" name="suspensao_tributaria" value="Não">Não</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label>Já pertenceu/pertence a sociedade com falência requerida/decretada?</label>
+            <div class="chkrow">
+              <label><input type="radio" name="falencia" value="Sim">Sim</label>
+              <label><input type="radio" name="falencia" value="Não">Não</label>
+            </div>
+          </div>
+          <div class="col-4">
+            <label>Possui filiais?</label>
+            <div class="chkrow">
+              <label><input type="radio" name="possui_filiais" value="Sim">Sim</label>
+              <label><input type="radio" name="possui_filiais" value="Não">Não</label>
+            </div>
+          </div>
+          <div class="col-4">
+            <label>Quantidade de filiais</label>
+            <input type="number" name="quantidade_filiais" min="0">
+          </div>
+          <div class="col-12">
+            <label>CNPJs das filiais</label>
+            <textarea name="cnpjs_filiais"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- ENDEREÇOS -->
+      <section>
+        <h2>ENDEREÇOS</h2>
+        <div class="grid">
+          <div class="col-12"><strong>Principal</strong></div>
+          <div class="col-6"><label>Endereço</label><input type="text" name="end_principal_logradouro"></div>
+          <div class="col-2"><label>Número</label><input type="text" name="end_principal_numero"></div>
+          <div class="col-4"><label>Complemento</label><input type="text" name="end_principal_complemento"></div>
+          <div class="col-4"><label>Bairro</label><input type="text" name="end_principal_bairro"></div>
+          <div class="col-4"><label>Cidade</label><input type="text" name="end_principal_cidade"></div>
+          <div class="col-2"><label>Estado</label><input type="text" name="end_principal_uf"></div>
+          <div class="col-2"><label>CEP</label><input type="text" name="end_principal_cep"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Entrega</strong></div>
+          <div class="col-12 chkrow"><label><input type="checkbox" id="copy_entrega">Mesmo do principal</label></div>
+          <div class="col-6"><label>Endereço</label><input type="text" name="end_entrega_logradouro"></div>
+          <div class="col-2"><label>Número</label><input type="text" name="end_entrega_numero"></div>
+          <div class="col-4"><label>Complemento</label><input type="text" name="end_entrega_complemento"></div>
+          <div class="col-4"><label>Bairro</label><input type="text" name="end_entrega_bairro"></div>
+          <div class="col-4"><label>Cidade</label><input type="text" name="end_entrega_cidade"></div>
+          <div class="col-2"><label>Estado</label><input type="text" name="end_entrega_uf"></div>
+          <div class="col-2"><label>CEP</label><input type="text" name="end_entrega_cep"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Cobrança</strong></div>
+          <div class="col-12 chkrow"><label><input type="checkbox" id="copy_cobranca">Mesmo do principal</label></div>
+          <div class="col-6"><label>Endereço</label><input type="text" name="end_cobranca_logradouro"></div>
+          <div class="col-2"><label>Número</label><input type="text" name="end_cobranca_numero"></div>
+          <div class="col-4"><label>Complemento</label><input type="text" name="end_cobranca_complemento"></div>
+          <div class="col-4"><label>Bairro</label><input type="text" name="end_cobranca_bairro"></div>
+          <div class="col-4"><label>Cidade</label><input type="text" name="end_cobranca_cidade"></div>
+          <div class="col-2"><label>Estado</label><input type="text" name="end_cobranca_uf"></div>
+          <div class="col-2"><label>CEP</label><input type="text" name="end_cobranca_cep"></div>
+        </div>
+      </section>
+
+      <!-- CONTATOS -->
+      <section>
+        <h2>CONTATOS</h2>
+        <div class="grid">
+          <div class="col-12"><strong>Responsável Legal</strong></div>
+          <div class="col-6"><label>Nome</label><input type="text" name="cont_rl_nome"></div>
+          <div class="col-3"><label>Cargo/Depto</label><input type="text" name="cont_rl_cargo"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="cont_rl_email"></div>
+          <div class="col-3"><label>Receber XML?</label>
+            <select name="cont_rl_receber_xml"><option>Não</option><option>Sim</option></select>
+          </div>
+          <div class="col-3"><label>Telefone</label><input type="tel" name="cont_rl_telefone"></div>
+          <div class="col-3"><label>WhatsApp</label><input type="tel" name="cont_rl_whatsapp"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Financeiro</strong></div>
+          <div class="col-6"><label>Nome</label><input type="text" name="cont_fin_nome"></div>
+          <div class="col-3"><label>Cargo/Depto</label><input type="text" name="cont_fin_cargo"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="cont_fin_email"></div>
+          <div class="col-3"><label>Receber XML?</label>
+            <select name="cont_fin_receber_xml"><option>Não</option><option>Sim</option></select>
+          </div>
+          <div class="col-3"><label>Telefone</label><input type="tel" name="cont_fin_telefone"></div>
+          <div class="col-3"><label>WhatsApp</label><input type="tel" name="cont_fin_whatsapp"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Compras</strong></div>
+          <div class="col-6"><label>Nome</label><input type="text" name="cont_comp_nome"></div>
+          <div class="col-3"><label>Cargo/Depto</label><input type="text" name="cont_comp_cargo"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="cont_comp_email"></div>
+          <div class="col-3"><label>Receber XML?</label>
+            <select name="cont_comp_receber_xml"><option>Não</option><option>Sim</option></select>
+          </div>
+          <div class="col-3"><label>Telefone</label><input type="tel" name="cont_comp_telefone"></div>
+          <div class="col-3"><label>WhatsApp</label><input type="tel" name="cont_comp_whatsapp"></div>
+        </div>
+      </section>
+
+      <!-- SÓCIOS -->
+      <section>
+        <h2>DADOS DOS SÓCIOS</h2>
+        <div class="grid">
+          <div class="col-12"><strong>Sócio 1</strong></div>
+          <div class="col-6"><label>Nome</label><input type="text" name="socio1_nome"></div>
+          <div class="col-3"><label>Data Nascimento</label><input type="date" name="socio1_nascimento"></div>
+          <div class="col-3"><label>CPF</label><input type="text" name="socio1_cpf"></div>
+          <div class="col-3"><label>RG</label><input type="text" name="socio1_rg"></div>
+          <div class="col-3"><label>Naturalidade</label><input type="text" name="socio1_naturalidade"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="socio1_email"></div>
+          <div class="col-3"><label>Telefone/Celular</label><input type="tel" name="socio1_telefone"></div>
+          <div class="col-4"><label>Nome do Cônjuge</label><input type="text" name="socio1_conjuge_nome"></div>
+          <div class="col-4"><label>CPF do Cônjuge</label><input type="text" name="socio1_conjuge_cpf"></div>
+          <div class="col-4"><label>RG do Cônjuge</label><input type="text" name="socio1_conjuge_rg"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Sócio 2</strong> <span class="muted">(opcional)</span></div>
+          <div class="col-6"><label>Nome</label><input type="text" name="socio2_nome"></div>
+          <div class="col-3"><label>Data Nascimento</label><input type="date" name="socio2_nascimento"></div>
+          <div class="col-3"><label>CPF</label><input type="text" name="socio2_cpf"></div>
+          <div class="col-3"><label>RG</label><input type="text" name="socio2_rg"></div>
+          <div class="col-3"><label>Naturalidade</label><input type="text" name="socio2_naturalidade"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="socio2_email"></div>
+          <div class="col-3"><label>Telefone/Celular</label><input type="tel" name="socio2_telefone"></div>
+          <div class="col-4"><label>Nome do Cônjuge</label><input type="text" name="socio2_conjuge_nome"></div>
+          <div class="col-4"><label>CPF do Cônjuge</label><input type="text" name="socio2_conjuge_cpf"></div>
+          <div class="col-4"><label>RG do Cônjuge</label><input type="text" name="socio2_conjuge_rg"></div>
+        </div>
+      </section>
+
+      <!-- REFERÊNCIAS -->
+      <section>
+        <h2>REFERÊNCIAS COMERCIAIS (fornecedores)</h2>
+        <div class="grid">
+          <div class="col-12"><strong>Fornecedor 1</strong></div>
+          <div class="col-4"><label>Empresa</label><input type="text" name="forn1_empresa"></div>
+          <div class="col-4"><label>Contato</label><input type="text" name="forn1_contato"></div>
+          <div class="col-4"><label>Telefone</label><input type="tel" name="forn1_telefone"></div>
+          <div class="col-4"><label>Cliente desde</label><input type="text" name="forn1_cliente_desde"></div>
+          <div class="col-4"><label>Última compra</label><input type="text" name="forn1_ultima_compra"></div>
+          <div class="col-4"><label>Limite de crédito</label><input type="text" name="forn1_limite"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Fornecedor 2</strong></div>
+          <div class="col-4"><label>Empresa</label><input type="text" name="forn2_empresa"></div>
+          <div class="col-4"><label>Contato</label><input type="text" name="forn2_contato"></div>
+          <div class="col-4"><label>Telefone</label><input type="tel" name="forn2_telefone"></div>
+          <div class="col-4"><label>Cliente desde</label><input type="text" name="forn2_cliente_desde"></div>
+          <div class="col-4"><label>Última compra</label><input type="text" name="forn2_ultima_compra"></div>
+          <div class="col-4"><label>Limite de crédito</label><input type="text" name="forn2_limite"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Fornecedor 3</strong></div>
+          <div class="col-4"><label>Empresa</label><input type="text" name="forn3_empresa"></div>
+          <div class="col-4"><label>Contato</label><input type="text" name="forn3_contato"></div>
+          <div class="col-4"><label>Telefone</label><input type="tel" name="forn3_telefone"></div>
+          <div class="col-4"><label>Cliente desde</label><input type="text" name="forn3_cliente_desde"></div>
+          <div class="col-4"><label>Última compra</label><input type="text" name="forn3_ultima_compra"></div>
+          <div class="col-4"><label>Limite de crédito</label><input type="text" name="forn3_limite"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>REFERÊNCIAS BANCÁRIAS</h2>
+        <div class="grid">
+          <div class="col-12"><strong>Banco 1</strong></div>
+          <div class="col-4"><label>Banco</label><input type="text" name="banco1_nome"></div>
+          <div class="col-4"><label>Agência</label><input type="text" name="banco1_agencia"></div>
+          <div class="col-4"><label>Conta Corrente</label><input type="text" name="banco1_conta"></div>
+          <div class="col-4"><label>Gerente</label><input type="text" name="banco1_gerente"></div>
+          <div class="col-4"><label>Telefone</label><input type="tel" name="banco1_telefone"></div>
+
+          <div class="col-12" style="margin-top:8px;"><strong>Banco 2</strong></div>
+          <div class="col-4"><label>Banco</label><input type="text" name="banco2_nome"></div>
+          <div class="col-4"><label>Agência</label><input type="text" name="banco2_agencia"></div>
+          <div class="col-4"><label>Conta Corrente</label><input type="text" name="banco2_conta"></div>
+          <div class="col-4"><label>Gerente</label><input type="text" name="banco2_gerente"></div>
+          <div class="col-4"><label>Telefone</label><input type="tel" name="banco2_telefone"></div>
+        </div>
+      </section>
+
+      <!-- INTERESSES -->
+      <section>
+        <h2>INTERESSE</h2>
+        <div class="chkrow">
+          <label><input type="checkbox" name="interesse_revenda" value="Revenda">Revenda</label>
+          <label><input type="checkbox" name="interesse_aplicacao" value="Aplicação">Aplicação</label>
+          <label><input type="checkbox" name="interesse_consumo" value="Consumo">Consumo</label>
+          <label><input type="checkbox" name="interesse_outros" value="Outros">Outros</label>
+        </div>
+        <div class="row"><label>Outros interesses</label><textarea name="interesse_outros_descricao"></textarea></div>
+      </section>
+
+      <!-- DOCUMENTOS ANEXADOS -->
+      <section class="files">
+        <h2>DOCUMENTOS ANEXADOS</h2>
+        <div class="grid">
+          <div class="col-6"><label>Contrato Social</label><input type="file" name="contrato_social" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Cartão CNPJ</label><input type="file" name="cartao_cnpj" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Inscrição Estadual / Municipal</label><input type="file" name="inscricao_ie_im" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Comprovante de Endereço</label><input type="file" name="comprovante_endereco" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Documento Sócio 1 (RG/CNH)</label><input type="file" name="socio1_doc_rg_cnh" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>CPF Sócio 1</label><input type="file" name="socio1_cpf_arquivo" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Comprovante Endereço Sócio 1</label><input type="file" name="socio1_comp_end" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Documento Sócio 2 (RG/CNH)</label><input type="file" name="socio2_doc_rg_cnh" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>CPF Sócio 2</label><input type="file" name="socio2_cpf_arquivo" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Comprovante Endereço Sócio 2</label><input type="file" name="socio2_comp_end" accept=".pdf,.jpg,.jpeg,.png"></div>
+        </div>
+        <div class="muted">Formatos: PDF, JPG, PNG — até ~25–50 MB por arquivo.</div>
+      </section>
+
+      <!-- DECLARAÇÃO -->
+      <section>
+        <h2>DECLARAÇÃO</h2>
+        <p class="muted">Declaro que as informações e documentos apresentados são verdadeiros, completos e precisos. Autorizo a verificação.</p>
+        <div class="grid">
+          <div class="col-6"><label>Nome</label><input type="text" name="decl_nome"></div>
+          <div class="col-3"><label>CPF</label><input type="text" name="decl_cpf"></div>
+          <div class="col-3"><label>Data</label><input type="date" name="decl_data"></div>
+        </div>
+      </section>
+
+      <div class="ok" id="ok">Cadastro enviado! Obrigado. Em instantes você receberá a confirmação por e-mail.</div>
+
+      <div class="actions">
+        <button type="reset" class="btn btn-ghost">Limpar</button>
+        <button type="submit" class="btn btn-dark">Enviar</button>
+      </div>
+
+      <iframe name="submitFrame" id="submitFrame" style="display:none;"></iframe>
+    </form>
+  </div>
+
+  <script>
+    // util: copiar endereço principal para entrega/cobrança
+    (function(){
+      function copy(prefix) {
+        const src = ['logradouro','numero','complemento','bairro','cidade','uf','cep']
+          .reduce((acc,k)=> (acc[k]=document.querySelector('[name="end_principal_'+k+'"]'), acc), {});
+        const dst = ['logradouro','numero','complemento','bairro','cidade','uf','cep'];
+        dst.forEach(function(k) {
+          var el = document.querySelector('[name="end_'+prefix+'_'+k+'"]');
+          if (el && src[k]) el.value = src[k].value;
+        });
+      }
+      var e = document.getElementById('copy_entrega');
+      var c = document.getElementById('copy_cobranca');
+      if (e) e.addEventListener('change', function(){ if(this.checked) copy('entrega'); });
+      if (c) c.addEventListener('change', function(){ if(this.checked) copy('cobranca'); });
+    })();
+  </script>
+
+  <!-- Patch que garante integração com Apps Script e feedback de envio -->
+  <script src="actecmax_patch.js" defer></script>
+</body>
+</html>
