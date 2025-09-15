@@ -2336,12 +2336,22 @@ function inferFieldsIfMissing(obj){
 
 
 <script>
+<script>
 (function(){"use strict";
-  var EXEC = 'https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec';
-  function ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
+
+  function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
   ready(function(){
+    // Remove botão "Salvar" se existir (visual only)
+    Array.from(document.querySelectorAll('button, input[type=button], a')).forEach(function(el){
+      var t=(el.textContent||el.value||'').trim().toLowerCase();
+      var n=(el.name||el.id||'').toLowerCase();
+      if (t==='salvar' || /(^|[-_])salvar($|[-_])/.test(n)) { try{ el.remove(); }catch(e){} }
+    });
+
     var form = document.getElementById('cadastroForm') || document.querySelector('form');
     if(!form) return;
+
     form.setAttribute('action', EXEC);
     form.setAttribute('method','POST');
     form.setAttribute('enctype','multipart/form-data');
@@ -2349,93 +2359,11 @@ function inferFieldsIfMissing(obj){
     try { form.onsubmit = null; } catch(e){}
 
     var iframe = document.getElementById('submitFrame');
-    if(!iframe){ iframe=document.createElement('iframe'); iframe.name='submitFrame'; iframe.id='submitFrame'; iframe.style.display='none'; form.appendChild(iframe); }
-    var first = true;
-    var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
-
-    iframe.addEventListener('load', function(){ if(first){first=false; return;}
-      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){ inp.disabled=false; inp.removeAttribute('data-disabled-during-submit'); });
-      if(submitBtn){ submitBtn.disabled=false; if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar'; else submitBtn.value = submitBtn.dataset._txt || 'Enviar'; }
-      try { form.reset(); } catch(e){}
-      alert('Cadastro enviado com sucesso!');
-    });
-
-    // STRICT CAPTURE: bloqueia qualquer outro handler de submit e executa o nosso fluxo
-    form.addEventListener('submit', function(ev){
-      // CAPTURE-phase handler: impede outros scripts
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation();
-
-      var files = Array.from(form.querySelectorAll('input[type=file]'));
-      if(submitBtn){ submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value); submitBtn.disabled=true; if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…'; else submitBtn.value='Enviando…'; }
-
-      if(!files.length){ HTMLFormElement.prototype.submit.call(form); return; }
-
-      var promises=[], hidden=[];
-      files.forEach(function(inp){
-        var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
-        Array.from(inp.files||[]).forEach(function(f,idx){
-          promises.push(new Promise(function(res,rej){
-            var fr = new FileReader();
-            fr.onload = function(){
-              var dataUrl = fr.result || '';
-              var b64 = String(dataUrl).split(',')[1] || '';
-              var suf = inp.multiple ? '_' + (idx+1) : '';
-              var h1 = document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
-              var h2 = document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
-              var h3 = document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
-              hidden.push(h1,h2,h3); res();
-            };
-            fr.onerror = rej;
-            fr.readAsDataURL(f);
-          }));
-        });
-      });
-
-      Promise.all(promises).then(function(){
-        hidden.forEach(function(h){ form.appendChild(h); });
-        files.forEach(function(inp){ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); });
-        HTMLFormElement.prototype.submit.call(form);
-      }).catch(function(err){
-        console && console.error && console.error('Base64 error', err);
-        if(submitBtn){ submitBtn.disabled=false; if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar'; else submitBtn.value=submitBtn.dataset._txt || 'Enviar'; }
-        alert('Falha ao preparar anexos. Tente novamente.');
-      });
-    }, true); // capture=true
-  });
-})();
-</script>
-<script>
-(function(){"use strict";
-  // URL do seu /exec:
-  var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
-
-  function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
-  ready(function(){
-    // 0) Remove o botão "Salvar"
-    Array.from(document.querySelectorAll('button, input[type=button], a')).forEach(function(el){
-      var t = (el.textContent || el.value || '').trim().toLowerCase();
-      var n = (el.name || el.id || '').toLowerCase();
-      if (t==='salvar' || /(^|[-_])salvar($|[-_])/.test(n)) { try{ el.remove(); }catch(e){} }
-    });
-
-    // 1) Garante atributos básicos da form
-    var form = document.getElementById('cadastroForm') || document.querySelector('form');
-    if(!form) return;
-    form.setAttribute('action', EXEC);
-    form.setAttribute('method', 'POST');
-    form.setAttribute('enctype', 'multipart/form-data');
-    form.setAttribute('target', 'submitFrame');
-    try { form.onsubmit = null; } catch(e){}
-
-    // 2) Iframe oculto + mensagens do servidor
-    var iframe = document.getElementById('submitFrame');
     if(!iframe){
-      iframe = document.createElement('iframe');
-      iframe.name = 'submitFrame';
-      iframe.id   = 'submitFrame';
-      iframe.style.display = 'none';
+      iframe=document.createElement('iframe');
+      iframe.name='submitFrame';
+      iframe.id='submitFrame';
+      iframe.style.display='none';
       form.appendChild(iframe);
     }
 
@@ -2443,26 +2371,104 @@ function inferFieldsIfMissing(obj){
     var waiting = false;
     var inflightTimer = null;
 
+    // ---------- aviso/segurança ----------
+    var guard = {overlay:null, installed:false};
+
+    function showOverlayHint(msg){
+      if(!guard.overlay){
+        var el=document.createElement('div');
+        el.setAttribute('role','status');
+        el.setAttribute('aria-live','polite');
+        el.style.position='fixed';
+        el.style.zIndex='2147483647';
+        el.style.right='16px';
+        el.style.bottom='16px';
+        el.style.background='rgba(11,45,94,0.95)';
+        el.style.color='#fff';
+        el.style.padding='10px 14px';
+        el.style.borderRadius='12px';
+        el.style.boxShadow='0 8px 24px rgba(0,0,0,.25)';
+        el.style.font='500 14px/1.3 Segoe UI,Arial,system-ui,sans-serif';
+        el.style.pointerEvents='none';
+        el.style.transition='opacity .2s ease, transform .2s ease';
+        guard.overlay = el;
+        document.body.appendChild(el);
+      }
+      guard.overlay.textContent = msg || '⏳ Enviando… não atualize a página.';
+      guard.overlay.style.opacity='1';
+      guard.overlay.style.transform='translateY(0)';
+    }
+    function hideOverlayHint(){
+      if(guard.overlay){
+        guard.overlay.style.opacity='0';
+        guard.overlay.style.transform='translateY(8px)';
+      }
+    }
+    function beforeUnloadHandler(e){
+      if(!waiting) return;
+      e.preventDefault(); e.returnValue='';
+    }
+    function keyGuard(e){
+      if(!waiting) return;
+      var isF5 = (e.key==='F5' || e.keyCode===116);
+      var isReloadCombo = (e.key && e.key.toLowerCase()==='r' && (e.ctrlKey||e.metaKey));
+      if(isF5 || isReloadCombo){ e.preventDefault(); e.stopPropagation(); showOverlayHint('⏳ Enviando… aguarde (não atualize a página)'); }
+    }
+    function startGuards(){
+      if(guard.installed) return;
+      guard.installed = true;
+      window.addEventListener('beforeunload', beforeUnloadHandler);
+      document.addEventListener('keydown', keyGuard, true);
+      showOverlayHint('⏳ Enviando… não atualize a página.');
+    }
+    function stopGuards(){
+      if(!guard.installed) return;
+      guard.installed = false;
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+      document.removeEventListener('keydown', keyGuard, true);
+      hideOverlayHint();
+    }
+    // -------------------------------------
+
+    function thankAndRedirect(){
+      // Agradece e redireciona sem mexer no layout
+      showOverlayHint('✅ Obrigado! Cadastro enviado com sucesso. Redirecionando…');
+      // se seu botão já troca para "Enviado" por outro script, não forçamos nada aqui
+      setTimeout(function(){
+        window.location.href = 'https://www.actecmax.com.br/';
+      }, 1200);
+    }
+
     function cleanupUI(showOk){
       Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
         inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
       });
+
+      // Mantém seu comportamento atual: se seu próprio script escrever "Enviado", não sobrescrevemos
       if(submitBtn){
+        var current = (submitBtn.tagName==='BUTTON') ? submitBtn.textContent : submitBtn.value;
+        // Se ainda estiver "Enviando…", troca para "Enviado"
+        if (/^enviando/i.test(current)) {
+          if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviado';
+          else submitBtn.value = 'Enviado';
+        }
         submitBtn.disabled=false;
-        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar';
-        else submitBtn.value = submitBtn.dataset._txt || 'Enviar';
       }
+
       try { form.reset(); } catch(e){}
-      if (showOk) alert('Cadastro enviado com sucesso!');
+      stopGuards();
+
+      if (showOk) thankAndRedirect();
     }
+
     function armTimeout(){
       clearTimeout(inflightTimer);
       inflightTimer = setTimeout(function(){
         if(waiting){ waiting=false; cleanupUI(true); }
-      }, 10000); // 10s de tolerância
+      }, 10000);
     }
 
-    // Sinal direto do servidor (Apps Script doPost envia postMessage)
+    // Sinal do servidor (Apps Script envia postMessage)
     window.addEventListener('message', function(ev){
       if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) { clearTimeout(inflightTimer); waiting=false; cleanupUI(true); }
       if (ev && ev.data==='ACTEC_ERR') { clearTimeout(inflightTimer); waiting=false; cleanupUI(false); alert('Houve um erro no processamento.'); }
@@ -2472,16 +2478,17 @@ function inferFieldsIfMissing(obj){
     iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; cleanupUI(true); });
     iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; cleanupUI(true); });
 
-    // 3) Envio com conversão de anexos para base64
     form.addEventListener('submit', function(ev){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
 
       var files = Array.from(form.querySelectorAll('input[type=file]'));
-      waiting = true;
+      waiting = true; startGuards();
+
       if(submitBtn){
         submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value);
         submitBtn.disabled = true;
-        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviando…'; else submitBtn.value = 'Enviando…';
+        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviando…';
+        else submitBtn.value = 'Enviando…';
       }
 
       if(!files.length){
@@ -2490,7 +2497,7 @@ function inferFieldsIfMissing(obj){
         return;
       }
 
-      var promises = [], hidden = [];
+      var promises=[], hidden=[];
       files.forEach(function(inp){
         var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
         Array.from(inp.files||[]).forEach(function(f, idx){
@@ -2516,7 +2523,7 @@ function inferFieldsIfMissing(obj){
         armTimeout();
         HTMLFormElement.prototype.submit.call(form);
       }).catch(function(err){
-        waiting=false;
+        waiting=false; stopGuards();
         if(submitBtn){
           submitBtn.disabled=false;
           if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar';
