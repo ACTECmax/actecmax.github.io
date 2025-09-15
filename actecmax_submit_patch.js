@@ -1,5 +1,5 @@
 (function(){"use strict";
-  var EXEC = 'https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec';
+  var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
   ready(function(){
     var form = document.getElementById('cadastroForm') || document.querySelector('form');
@@ -13,28 +13,41 @@
 
     var iframe = document.getElementById('submitFrame');
     if(!iframe){ iframe=document.createElement('iframe'); iframe.name='submitFrame'; iframe.id='submitFrame'; iframe.style.display='none'; form.appendChild(iframe); }
-    var first = true;
-    var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
 
-    iframe.addEventListener('load', function(){ if(first){first=false; return;}
-      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){ inp.disabled=false; inp.removeAttribute('data-disabled-during-submit'); });
-      if(submitBtn){ submitBtn.disabled=false; if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar'; else submitBtn.value = submitBtn.dataset._txt || 'Enviar'; }
+    var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
+    var waiting = false;
+
+    iframe.addEventListener('load', function(){
+      if(!waiting) return; // ignora loads que não são pós-envio
+      waiting = false;
+      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
+        inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
+      });
+      if(submitBtn){
+        submitBtn.disabled=false;
+        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar';
+        else submitBtn.value = submitBtn.dataset._txt || 'Enviar';
+      }
       try { form.reset(); } catch(e){}
-      // Alerta simples para não mexer no layout
       alert('Cadastro enviado com sucesso!');
     });
 
-    // Captura o submit antes de qualquer outro handler (evita fetch/ajax antigos)
-    form.addEventListener('submit', function(ev){ }, true);
-
-    // Faz o trabalho no bubbling
     form.addEventListener('submit', function(ev){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+
       var files = Array.from(form.querySelectorAll('input[type=file]'));
 
-      if(submitBtn){ submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value); submitBtn.disabled=true; if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…'; else submitBtn.value='Enviando…'; }
+      waiting = true;
+      if(submitBtn){
+        submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value);
+        submitBtn.disabled=true;
+        if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…'; else submitBtn.value='Enviando…';
+      }
 
-      if(!files.length){ HTMLFormElement.prototype.submit.call(form); return; }
+      if(!files.length){
+        HTMLFormElement.prototype.submit.call(form);
+        return;
+      }
 
       var promises=[], hidden=[];
       files.forEach(function(inp){
@@ -62,7 +75,12 @@
         files.forEach(function(inp){ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); });
         HTMLFormElement.prototype.submit.call(form);
       }).catch(function(err){
-        if(submitBtn){ submitBtn.disabled=false; if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar'; else submitBtn.value = submitBtn.dataset._txt || 'Enviar'; }
+        waiting = false;
+        if(submitBtn){
+          submitBtn.disabled=false;
+          if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar';
+          else submitBtn.value = submitBtn.dataset._txt || 'Enviar';
+        }
         console && console.error && console.error('Base64 error', err);
         alert('Falha ao preparar anexos. Tente novamente.');
       });
