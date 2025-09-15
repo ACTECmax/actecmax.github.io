@@ -624,7 +624,7 @@ form{ display: block !important; }
 </head>
 <body>
 <form id="cadastroForm" method="POST" action="https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec" enctype="multipart/form-data" target="submitFrame">
-<input type="hidden" name="_source" value="actecmax_form_full_base64">
+<input type="hidden" name="_source" value="actecmax_form_full_base64_v2">
 
 <div class="container">
 <!-- Cabeçalho -->
@@ -2336,66 +2336,87 @@ function inferFieldsIfMissing(obj){
 
 
 <script>
-(function(){
+(function(){"use strict";
   var EXEC = 'https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec';
-  var form = document.getElementById('cadastroForm') || document.querySelector('form');
-  if(!form) return;
+  // Wait DOM ready (in case original scripts build UI on load)
+  function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
+  ready(function(){
+    var form = document.getElementById('cadastroForm') || document.querySelector('form');
+    if(!form) return;
 
-  // Force correct attributes
-  form.setAttribute('action', EXEC);
-  form.setAttribute('method','POST');
-  form.setAttribute('enctype','multipart/form-data');
-  form.setAttribute('target','submitFrame');
+    // Force attributes (but don't remove other listeners)
+    form.setAttribute('action', EXEC);
+    form.setAttribute('method','POST');
+    form.setAttribute('enctype','multipart/form-data');
+    form.setAttribute('target','submitFrame');
+    try { form.onsubmit = null; } catch(e){}
 
-  // Remove inline onsubmit
-  form.removeAttribute('onsubmit');
-
-  // Ensure iframe
-  var ifr = document.getElementById('submitFrame');
-  if(!ifr){ ifr=document.createElement('iframe'); ifr.name='submitFrame'; ifr.id='submitFrame'; ifr.style.display='none'; form.appendChild(ifr); }
-
-  // Kill existing listeners by cloning (keeps layout/fields)
-  var clone = form.cloneNode(true);
-  form.parentNode.replaceChild(clone, form);
-  form = clone;
-
-  // Wire toast via alert to avoid changing layout
-  var btn = form.querySelector('[type="submit"]');
-  var first = true;
-  var ifr2 = document.getElementById('submitFrame');
-  ifr2.addEventListener('load', function(){ if(first){first=false;return;} if(btn){btn.disabled=false; btn.textContent=(btn.dataset._txt||btn.textContent||'Enviar');} try{form.reset();}catch(e){} alert('Cadastro enviado com sucesso!'); });
-
-  form.addEventListener('submit', function(ev){
-    var inputs = Array.from(form.querySelectorAll('input[type=file]'));
-    if (!inputs.length) return;
-
-    ev.preventDefault();
-    if(btn){ btn.dataset._txt = btn.textContent; btn.disabled=true; btn.textContent='Enviando…'; }
-
-    var jobs=[], hidden=[];
-    inputs.forEach(function(inp){
-      var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
-      Array.from(inp.files||[]).forEach(function(f,idx){
-        jobs.push(new Promise(function(res,rej){
-          var fr = new FileReader();
-          fr.onload = function(){ 
-            var data = String(fr.result||''); var b64 = data.split(',')[1] || '';
-            var suf = inp.multiple ? '_' + (idx+1) : '';
-            var h1 = document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
-            var h2 = document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
-            var h3 = document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
-            hidden.push(h1,h2,h3); res();
-          };
-          fr.onerror = rej;
-          fr.readAsDataURL(f);
-        }));
-      });
-      inp.value = ''; // avoid multipart mixing
+    var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
+    var iframe = document.getElementById('submitFrame');
+    if(!iframe){ iframe=document.createElement('iframe'); iframe.name='submitFrame'; iframe.id='submitFrame'; iframe.style.display='none'; form.appendChild(iframe); }
+    var firstLoad = true;
+    iframe.addEventListener('load', function(){ if(firstLoad){ firstLoad=false; return; }
+      // Re-enable any temporarily disabled file inputs
+      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){ inp.disabled=false; inp.removeAttribute('data-disabled-during-submit'); });
+      if(submitBtn){ submitBtn.disabled=false; if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar'; }
+      try { form.reset(); } catch(e){}
+      if (!window.__actec_toast_shown__) alert('Cadastro enviado com sucesso!');
     });
 
-    Promise.all(jobs).then(function(){ hidden.forEach(function(h){ form.appendChild(h); }); form.submit(); })
-    .catch(function(){ if(btn){btn.disabled=false; btn.textContent=(btn.dataset._txt||'Enviar');} alert('Falha ao preparar anexos.'); });
-  }, true);
+    // SUBMIT INTERCEPTOR (CAPTURE): neutraliza submitters AJAX e usa envio nativo
+    form.addEventListener('submit', function(ev){ 
+      // CAPTURE handler
+    }, true);
+
+    // We'll attach a bubbling handler to actually do the work;
+    // the capture handler above prevents other bubbling submit handlers from hijacking.
+    form.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+
+      var files = Array.from(form.querySelectorAll('input[type=file]'));
+      if(submitBtn){ submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value); submitBtn.disabled=true; if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…'; else submitBtn.value='Enviando…'; }
+
+      if (!files.length) {
+        HTMLFormElement.prototype.submit.call(form);
+        return;
+      }
+
+      var promises = [], hidden = [];
+      files.forEach(function(inp){
+        var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
+        var list = Array.from(inp.files||[]);
+        list.forEach(function(f,idx){
+          promises.push(new Promise(function(res,rej){
+            var fr = new FileReader();
+            fr.onload = function(){
+              var dataUrl = fr.result||'';
+              var b64 = String(dataUrl).split(',')[1] || '';
+              var suf = inp.multiple ? '_' + (idx+1) : '';
+              var h1 = document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
+              var h2 = document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
+              var h3 = document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
+              hidden.push(h1,h2,h3); res();
+            };
+            fr.onerror = rej;
+            fr.readAsDataURL(f);
+          }));
+        });
+      });
+
+      Promise.all(promises).then(function(){
+        hidden.forEach(function(h){ form.appendChild(h); });
+        // Disable files so o multipart não inclui binários (mas sem perder o valor/visuais do UI)
+        files.forEach(function(inp){ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); });
+        HTMLFormElement.prototype.submit.call(form);
+      }).catch(function(err){
+        console && console.error && console.error('Base64 error', err);
+        if(submitBtn){ submitBtn.disabled=false; if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar'; }
+        alert('Falha ao preparar anexos. Tente novamente.');
+      });
+    });
+  });
 })();
 </script>
 
