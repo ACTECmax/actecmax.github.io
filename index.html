@@ -1,118 +1,92 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ficha Cadastral - ACTECmax</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ficha Cadastral — ACTECmax</title>
   <style>
-    :root { --w: 980px; }
+    :root { --max: 980px; }
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; background:#f7f7f8; color:#0f172a; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    .wrap { max-width: var(--w); margin: 24px auto; background:#fff; border-radius:16px; box-shadow: 0 8px 30px rgba(0,0,0,.06); overflow:hidden; }
+    .wrap { max-width: var(--max); margin: 24px auto; background:#fff; border-radius:16px; box-shadow: 0 8px 28px rgba(0,0,0,.06); overflow:hidden; }
     header { padding:20px 24px; border-bottom:1px solid #e5e7eb; }
-    header h1 { margin:0; font-size: 20px; }
+    header h1 { margin:0; font-size:20px; }
     header .sub { font-size:13px; color:#475569; margin-top:6px; }
     section { padding:20px 24px; border-top:1px solid #f1f5f9; }
     h2 { font-size:16px; margin:0 0 12px 0; color:#111827; }
     .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
-    .col-12 { grid-column: span 12; }
-    .col-6 { grid-column: span 6; }
-    .col-4 { grid-column: span 4; }
-    .col-3 { grid-column: span 3; }
+    .col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-6 { grid-column: span 6; } .col-4 { grid-column: span 4; } .col-3 { grid-column: span 3; }
     label { display:block; font-size:13px; color:#334155; margin-bottom:6px; }
-    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], textarea, select {
+    input[type="text"], input[type="email"], input[type="tel"], input[type="date"], textarea, select {
       width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; font-size:14px;
     }
+    input[type="file"] { display:block; margin-top:6px; }
     textarea { min-height: 90px; resize: vertical; }
-    .row { margin-bottom:12px; }
     .muted { font-size:12px; color:#64748b; }
-    .chkrow { display:flex; flex-wrap:wrap; gap:14px; }
-    .chkrow label { display:flex; align-items:center; gap:8px; font-size:14px; color:#334155; }
-    .files input[type="file"] { display:block; margin-top:6px; }
     .actions { display:flex; gap:12px; padding:20px 24px; border-top:1px solid #e5e7eb; background:#fafafa; }
     .btn { padding:12px 16px; border:0; border-radius:12px; cursor:pointer; font-weight:600; }
     .btn-dark { background:#0f172a; color:#fff; }
     .btn-ghost { background:#fff; color:#0f172a; border:1px solid #cbd5e1; }
-    .ok { display:none; margin:16px 24px; padding:12px; border:1px solid #1a7f37; color:#064e3b; background:#ecfdf5; border-radius:12px; }
-    @media (max-width: 768px) {
-      .wrap { margin: 0; border-radius: 0; }
-      section { padding: 16px; }
-      header { padding: 16px; }
-      .actions { padding: 16px; position: sticky; bottom:0; }
-    }
+    .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:9999; display:none; }
+    .toast > div { padding:12px 16px; border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,.12); font-weight:600; }
+    .toast .ok  { background:#ecfdf5; color:#065f46; border:1px solid #86efac; }
+    .toast .err { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+    @media (max-width: 768px) { .wrap { margin:0; border-radius:0; } section, header, .actions { padding:16px; } }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>ACTECmax Ltda. — Ficha Cadastral</h1>
-      <div class="sub">CNPJ: 04.239.929/0001-29 — Av. Carlos Drummond de Andrade, 1.100 - Jd. Jóquei Clube — Ribeirão Preto - SP — CEP: 14078-660</div>
+      <h1>ACTECmax — Ficha Cadastral</h1>
+      <div class="sub">CNPJ: 04.239.929/0001-29 — Av. Carlos Drummond de Andrade, 1.100 — Ribeirão Preto/SP</div>
     </header>
 
-    <form id="ficha-cadastral" method="POST" action="'https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec'" enctype="multipart/form-data" target="submitFrame" novalidate>
+    <form id="cadastroform"
+          method="POST"
+          action="https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec"
+          enctype="multipart/form-data"
+          target="submitFrame"
+          novalidate>
+      <!-- DADOS DA EMPRESA -->
       <section>
-        <h2>DADOS DA EMPRESA</h2>
+        <h2>Dados da Empresa</h2>
         <div class="grid">
           <div class="col-8"><label>Razão Social</label><input type="text" name="razao_social" required></div>
           <div class="col-4"><label>Nome Fantasia</label><input type="text" name="nome_fantasia" required></div>
           <div class="col-4"><label>CNPJ</label><input type="text" name="cnpj" required></div>
           <div class="col-4"><label>Inscrição Estadual</label><input type="text" name="inscricao_estadual"></div>
           <div class="col-4"><label>Inscrição Municipal</label><input type="text" name="inscricao_municipal"></div>
-          <div class="col-3"><label>Suframa</label><input type="text" name="suframa"></div>
-          <div class="col-3"><label>CNAE (Atividade Principal)</label><input type="text" name="cnae_principal"></div>
-          <div class="col-3"><label>Data Constituição</label><input type="date" name="data_constituicao"></div>
-          <div class="col-3"><label>Última alteração Contrato Social</label><input type="date" name="data_ultima_alteracao"></div>
-          <div class="col-4"><label>Capital Social Registrado</label><input type="text" name="capital_social"></div>
-          <div class="col-4"><label>Site</label><input type="text" name="site"></div>
-          <div class="col-4"><label>E-mail (XML)</label><input type="email" name="email_xml"></div>
-          <div class="col-4"><label>Telefone</label><input type="tel" name="telefone"></div>
-          <div class="col-4"><label>Celular</label><input type="tel" name="celular"></div>
-          <div class="col-4"><label>WhatsApp</label><input type="tel" name="whatsapp"></div>
-          <div class="col-12">
-            <label>Regime Tributário</label>
-            <div class="chkrow">
-              <label><input type="radio" name="regime_tributario" value="Lucro Real">Lucro Real</label>
-              <label><input type="radio" name="regime_tributario" value="Lucro Presumido">Lucro Presumido</label>
-              <label><input type="radio" name="regime_tributario" value="Simples Nacional">Simples Nacional</label>
-            </div>
-          </div>
+          <div class="col-6"><label>E-mail XML</label><input type="email" name="email_xml"></div>
+          <div class="col-3"><label>Telefone</label><input type="tel" name="telefone"></div>
+          <div class="col-3"><label>WhatsApp</label><input type="tel" name="whatsapp"></div>
+          <div class="col-12"><label>Endereço Completo</label><input type="text" name="endereco"></div>
         </div>
       </section>
 
+      <!-- CONTATO -->
       <section>
-        <h2>ENDEREÇOS</h2>
+        <h2>Contato Principal</h2>
         <div class="grid">
-          <div class="col-12"><strong>Principal</strong></div>
-          <div class="col-6"><label>Endereço</label><input type="text" name="end_principal_logradouro"></div>
-          <div class="col-2"><label>Número</label><input type="text" name="end_principal_numero"></div>
-          <div class="col-4"><label>Complemento</label><input type="text" name="end_principal_complemento"></div>
-          <div class="col-4"><label>Bairro</label><input type="text" name="end_principal_bairro"></div>
-          <div class="col-4"><label>Cidade</label><input type="text" name="end_principal_cidade"></div>
-          <div class="col-2"><label>Estado</label><input type="text" name="end_principal_uf"></div>
-          <div class="col-2"><label>CEP</label><input type="text" name="end_principal_cep"></div>
+          <div class="col-6"><label>Nome</label><input type="text" name="contato_nome"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="contato_email"></div>
+          <div class="col-3"><label>Telefone</label><input type="tel" name="contato_telefone"></div>
         </div>
       </section>
 
+      <!-- DOCUMENTOS -->
       <section>
-        <h2>CONTATOS</h2>
-        <div class="grid">
-          <div class="col-6"><label>Nome do Responsável</label><input type="text" name="cont_rl_nome"></div>
-          <div class="col-3"><label>E-mail</label><input type="email" name="cont_rl_email"></div>
-          <div class="col-3"><label>Telefone</label><input type="tel" name="cont_rl_telefone"></div>
-        </div>
-      </section>
-
-      <section class="files">
-        <h2>DOCUMENTOS ANEXADOS</h2>
+        <h2>Documentos (anexos)</h2>
         <div class="grid">
           <div class="col-6"><label>Contrato Social</label><input type="file" name="contrato_social" accept=".pdf,.jpg,.jpeg,.png"></div>
           <div class="col-6"><label>Cartão CNPJ</label><input type="file" name="cartao_cnpj" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Comprovante de Endereço</label><input type="file" name="comprovante_endereco" accept=".pdf,.jpg,.jpeg,.png"></div>
         </div>
-        <div class="muted">Formatos: PDF, JPG, PNG — até ~25–50 MB por arquivo.</div>
+        <div class="muted">Formatos aceitos: PDF, JPG, PNG (até ~25–50 MB por arquivo).</div>
       </section>
 
+      <!-- DECLARAÇÃO -->
       <section>
-        <h2>DECLARAÇÃO</h2>
+        <h2>Declaração</h2>
         <div class="grid">
           <div class="col-6"><label>Nome</label><input type="text" name="decl_nome"></div>
           <div class="col-3"><label>CPF</label><input type="text" name="decl_cpf"></div>
@@ -120,95 +94,45 @@
         </div>
       </section>
 
-      <div class="ok" id="ok">Cadastro enviado! Obrigado. Em instantes você receberá a confirmação por e-mail.</div>
-
       <div class="actions">
         <button type="reset" class="btn btn-ghost">Limpar</button>
-        <button type="submit" class="btn btn-dark">Enviar</button>
+        <button type="submit" class="btn btn-dark" id="btnEnviar">Enviar</button>
       </div>
 
+      <!-- iframe oculto para receber a resposta do Google -->
       <iframe name="submitFrame" id="submitFrame" style="display:none;"></iframe>
+      <input type="hidden" name="_source" value="actecmax_github_pages" />
     </form>
   </div>
 
+  <!-- Toast simples -->
+  <div class="toast" id="toast"><div class="ok" id="toastBox">Cadastro enviado com sucesso!</div></div>
+
   <script>
-  (function(){
-    var EXEC_URL = 'https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec';
-
-    function sanitizeName(s) {
-      return (s||"").toString().trim().toLowerCase().replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'');
-    }
-    function ensureNames(form) {
-      form.querySelectorAll('input,select,textarea').forEach(function(el){
-        var type = (el.getAttribute('type')||'text').toLowerCase();
-        if (['submit','button','reset','image','hidden'].indexOf(type) >= 0) return;
-        if (!el.name || !el.name.trim()) {
-          var candidate = el.id || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('aria-label') || el.tagName.toLowerCase();
-          el.name = sanitizeName(candidate) || (el.tagName.toLowerCase() + '_' + Math.random().toString(36).slice(2));
-        }
-      });
-    }
-    function injectFrameAndUI(form) {
+    (function(){
+      // feedback ao concluir (quando o iframe carregar com a resposta do Google)
       var iframe = document.getElementById('submitFrame');
-      var ok = document.getElementById('ok');
+      var btn = document.getElementById('btnEnviar');
+      var toast = document.getElementById('toast');
+      var toastBox = document.getElementById('toastBox');
       var firstLoad = true;
+
       iframe.addEventListener('load', function(){
-        if (firstLoad) { firstLoad = false; return; }
-        ok.style.display = 'block';
-        if (form.__btn) {
-          form.__btn.disabled = false;
-          if (form.__btn.tagName === 'BUTTON') form.__btn.textContent = form.__btnText;
-          else form.__btn.value = form.__btnText;
-        }
+        if (firstLoad) { firstLoad = false; return; } // ignora o primeiro load (render inicial)
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+        toastBox.className = 'ok';
+        toastBox.textContent = 'Cadastro enviado com sucesso!';
+        toast.style.display = 'block';
+        setTimeout(function(){ toast.style.display = 'none'; }, 4000);
       });
-      return iframe;
-    }
-    function forceNativeSubmit(form) {
-      try { form.removeAttribute('onsubmit'); } catch(e){}
-      form.method = 'POST';
-      form.action = EXEC_URL;
-      form.enctype = 'multipart/form-data';
-      form.target = 'submitFrame';
-      if (!form.id) form.id = 'ficha-cadastral';
-      var src = form.querySelector('input[name="_source"]');
-      if (!src) {
-        src = document.createElement('input');
-        src.type='hidden'; src.name='_source'; src.value='actecmax_onefile';
-        form.appendChild(src);
-      }
-      ensureNames(form);
-      injectFrameAndUI(form);
 
-      var submitters = Array.from(form.querySelectorAll('button[type="submit"],input[type="submit"],button:not([type])'));
-      submitters.forEach(function(btn){
-        ['click','pointerdown','touchstart'].forEach(function(evt){
-          btn.addEventListener(evt, function(ev){
-            ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-            form.__btn = btn; form.__btnText = (btn.tagName==='BUTTON'?btn.textContent:btn.value);
-            if (btn.tagName==='BUTTON') btn.textContent = 'Enviando...'; else btn.value='Enviando...';
-            btn.disabled = true;
-            HTMLFormElement.prototype.submit.call(form);
-            return false;
-          }, true);
-        });
+      // UX ao enviar (sem AJAX, envio nativo)
+      var form = document.getElementById('cadastroform');
+      form.addEventListener('submit', function(){
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+        // Envio é nativo (POST) e a resposta cai no iframe
       });
-      form.addEventListener('submit', function(e){
-        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-        HTMLFormElement.prototype.submit.call(form);
-        return false;
-      }, true);
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function(){
-        var form = document.getElementById('ficha-cadastral') || document.querySelector('form');
-        if (form) forceNativeSubmit(form);
-      });
-    } else {
-      var form = document.getElementById('ficha-cadastral') || document.querySelector('form');
-      if (form) forceNativeSubmit(form);
-    }
-  })();
+    })();
   </script>
 </body>
 </html>
