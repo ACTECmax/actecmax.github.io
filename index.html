@@ -1,17 +1,212 @@
-<!doctype html><html lang="pt-br"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cadastro ACTECmax</title>
-<body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7f7f8;color:#0f172a">
-  <h2 style="max-width:900px;margin:24px auto 8px">Ficha Cadastral — ACTECmax</h2>
-  <form id="form" method="POST"
-        action="https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec"
-        enctype="multipart/form-data" target="ok"
-        style="max-width:900px;margin:0 auto;background:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.06)">
-    <label>Razão Social<br><input name="razao_social" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"></label><br><br>
-    <label>CNPJ<br><input name="cnpj" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"></label><br><br>
-    <label>Contrato Social (PDF/JPG/PNG)<br><input type="file" name="contrato_social" accept=".pdf,.jpg,.jpeg,.png" required></label><br><br>
-    <button type="submit" style="padding:12px 16px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:600">Enviar</button>
-    <input type="hidden" name="_source" value="actecmax_minimal">
-  </form>
-  <iframe name="ok" style="display:none"></iframe>
-</body></html>
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACTECmax — Ficha Cadastral</title>
+<style>
+  :root {
+    --mx: 1080px;
+    --brand: #0f172a;
+    --muted: #64748b;
+    --line: #e5e7eb;
+    --ok-bg: #ecfdf5; --ok-bd:#86efac; --ok-tx:#065f46;
+    --er-bg: #fee2e2; --er-bd:#fecaca; --er-tx:#991b1b;
+  }
+  * { box-sizing:border-box }
+  html,body { margin:0; padding:0; background:#f7f7f8; color:#0f172a; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  .wrap { max-width:var(--mx); margin: 24px auto; background:#fff; border-radius:18px; box-shadow: 0 10px 35px rgba(0,0,0,.07); overflow:hidden }
+  header { padding:24px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px }
+  .logo { width:44px; height:44px; background:linear-gradient(140deg,#0f172a,#334155); border-radius:12px }
+  header h1 { margin:0; font-size:20px; line-height:1.2 }
+  header .sub { font-size:13px; color:var(--muted); margin-top:6px }
+  section { padding:22px 28px; border-top:1px solid #f1f5f9 }
+  h2 { margin:0 0 14px 0; font-size:16px }
+  .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap:14px }
+  .col-12{grid-column:span 12} .col-8{grid-column:span 8} .col-6{grid-column:span 6} .col-4{grid-column:span 4} .col-3{grid-column:span 3} .col-2{grid-column:span 2}
+  label { display:block; font-size:13px; color:#334155; margin-bottom:6px }
+  input[type="text"],input[type="email"],input[type="tel"],input[type="date"],textarea,select{
+    width:100%; padding:12px 12px; border:1px solid #cbd5e1; border-radius:12px; background:#fff; font-size:14px
+  }
+  input[type="file"]{ display:block; margin-top:6px }
+  textarea { min-height:100px; resize: vertical }
+  .muted { font-size:12px; color:var(--muted) }
+  .actions { display:flex; gap:12px; padding:18px 28px; border-top:1px solid var(--line); background:#fafafa }
+  .btn { padding:12px 16px; border:0; border-radius:12px; cursor:pointer; font-weight:700 }
+  .btn-dark { background:var(--brand); color:#fff }
+  .btn-ghost{ background:#fff; color:var(--brand); border:1px solid #cbd5e1 }
+  .hl { background:linear-gradient(90deg,#581c87,#0ea5e9); height:5px }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); display:none; z-index:9999 }
+  .toast > div { border-radius:14px; padding:12px 16px; box-shadow:0 12px 32px rgba(0,0,0,.12); border:1px solid }
+  .ok { background:var(--ok-bg); border-color:var(--ok-bd); color:var(--ok-tx) }
+  .err{ background:var(--er-bg); border-color:var(--er-bd); color:var(--er-tx) }
+  .copyrow { display:flex; align-items:center; gap:10px; font-size:13px; color:#334155 }
+  @media (max-width: 860px){
+    .wrap { margin:0; border-radius:0 }
+    section, header, .actions { padding:16px }
+  }
+</style>
+</head>
+<body>
+  <div class="hl"></div>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>ACTECmax — Ficha Cadastral</h1>
+        <div class="sub">CNPJ: 04.239.929/0001-29 — Av. Carlos Drummond de Andrade, 1.100 — Ribeirão Preto/SP</div>
+      </div>
+    </header>
+
+    <form id="form" method="POST" action="https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec" enctype="multipart/form-data" target="submitFrame" novalidate>
+      <section>
+        <h2>Dados da Empresa</h2>
+        <div class="grid">
+          <div class="col-8"><label>Razão Social</label><input name="razao_social" required></div>
+          <div class="col-4"><label>Nome Fantasia</label><input name="nome_fantasia"></div>
+          <div class="col-4"><label>CNPJ</label><input id="cnpj" name="cnpj" inputmode="numeric" required></div>
+          <div class="col-4"><label>Inscrição Estadual</label><input name="inscricao_estadual"></div>
+          <div class="col-4"><label>CNAE Principal</label><input name="cnae_principal"></div>
+          <div class="col-6"><label>E-mail (XML/NFe)</label><input type="email" name="email_xml"></div>
+          <div class="col-3"><label>Telefone</label><input id="tel" name="telefone" inputmode="tel"></div>
+          <div class="col-3"><label>WhatsApp</label><input id="whats" name="whatsapp" inputmode="tel"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Endereço Principal</h2>
+        <div class="grid">
+          <div class="col-3"><label>CEP</label><input id="cep" name="end_cep" inputmode="numeric"></div>
+          <div class="col-9"><label>Logradouro</label><input name="end_logradouro"></div>
+          <div class="col-3"><label>Número</label><input name="end_numero"></div>
+          <div class="col-3"><label>Complemento</label><input name="end_complemento"></div>
+          <div class="col-3"><label>Bairro</label><input name="end_bairro"></div>
+          <div class="col-2"><label>UF</label><input name="end_uf" maxlength="2"></div>
+          <div class="col-4"><label>Cidade</label><input name="end_cidade"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Contato Financeiro</h2>
+        <div class="grid">
+          <div class="col-6"><label>Nome</label><input name="fin_nome"></div>
+          <div class="col-3"><label>E-mail</label><input type="email" name="fin_email"></div>
+          <div class="col-3"><label>Telefone</label><input id="fin_tel" name="fin_tel" inputmode="tel"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Documentos (anexos)</h2>
+        <div class="grid">
+          <div class="col-6"><label>Contrato Social</label><input type="file" name="contrato_social" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Cartão CNPJ</label><input type="file" name="cartao_cnpj" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Comprovante de Endereço</label><input type="file" name="comp_endereco" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="col-6"><label>Inscrição Estadual / Outros</label><input type="file" name="outros_docs" multiple accept=".pdf,.jpg,.jpeg,.png"></div>
+        </div>
+        <div class="muted">Formatos: PDF, JPG, PNG — até ~15&nbsp;MB por arquivo. Você pode anexar múltiplos em “Outros”.</div>
+      </section>
+
+      <section>
+        <h2>Declaração</h2>
+        <div class="grid">
+          <div class="col-6"><label>Nome</label><input name="decl_nome"></div>
+          <div class="col-3"><label>CPF</label><input id="cpf" name="decl_cpf" inputmode="numeric"></div>
+          <div class="col-3"><label>Data</label><input type="date" name="decl_data"></div>
+        </div>
+        <p class="muted">Confirmo que as informações são verdadeiras e autorizo o uso para fins cadastrais e de crédito.</p>
+      </section>
+
+      <div class="actions">
+        <button type="reset" class="btn btn-ghost">Limpar</button>
+        <button type="submit" class="btn btn-dark" id="btnEnviar">Enviar cadastro</button>
+      </div>
+
+      <input type="hidden" name="_source" value="actecmax_v3_base64">
+      <iframe id="submitFrame" name="submitFrame" style="display:none"></iframe>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"><div id="toastBox" class="ok">Cadastro enviado com sucesso!</div></div>
+
+<script>
+(function(){
+  function onlyDigits(s){ return (s||'').replace(/\D+/g,''); }
+  function maskCNPJ(v){ v = onlyDigits(v).slice(0,14);
+    return v.replace(/(\d{2})(\d)/,'$1.$2')
+            .replace(/(\d{3})(\d)/,'$1.$2')
+            .replace(/(\d{3})(\d)/,'$1/$2')
+            .replace(/(\d{4})(\d)/,'$1-$2'); }
+  function maskCPF(v){ v = onlyDigits(v).slice(0,11);
+    return v.replace(/(\d{3})(\d)/,'$1.$2')
+            .replace(/(\d{3})(\d)/,'$1.$2')
+            .replace(/(\d{3})(\d)/,'$1-$2'); }
+  function maskCEP(v){ v = onlyDigits(v).slice(0,8);
+    return v.replace(/(\d{5})(\d)/,'$1-$2'); }
+  function maskPhone(v){ v = onlyDigits(v).slice(0,11);
+    return v.length>10 ? v.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3')
+                       : v.replace(/(\d{2})(\d{4})(\d{4})/,'($1) $2-$3'); }
+
+  [['cnpj',maskCNPJ],['cpf',maskCPF],['cep',maskCEP],['tel',maskPhone],['whats',maskPhone],['fin_tel',maskPhone]]
+  .forEach(function(pair){ var el=document.getElementById(pair[0]); if(!el) return;
+    el.addEventListener('input', function(){ this.value = pair[1](this.value); }); });
+
+  var toast = document.getElementById('toast'), toastBox=document.getElementById('toastBox');
+  function show(ok,msg){
+    toastBox.className = ok ? 'ok' : 'err';
+    toastBox.textContent = msg || (ok ? 'Cadastro enviado com sucesso!' : 'Falha ao enviar.');
+    toast.style.display='block';
+    setTimeout(function(){ toast.style.display='none'; }, 4000);
+  }
+
+  var form = document.getElementById('form');
+  var btn  = document.getElementById('btnEnviar');
+  form.addEventListener('submit', function(ev){
+    var files = Array.from(form.querySelectorAll('input[type="file"]'));
+    if (!files.length){ return; }
+
+    ev.preventDefault();
+    if (btn){ btn.disabled=true; btn.textContent='Enviando…'; }
+
+    var readers = [], hidden = [];
+    files.forEach(function(inp){
+      var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
+      Array.from(inp.files || []).forEach(function(f,idx){
+        readers.push(new Promise(function(res){
+          var fr = new FileReader();
+          fr.onload = function(){
+            var dataUrl = fr.result || '';
+            var b64 = String(dataUrl).split(',')[1] || '';
+            var suf = inp.multiple ? '_' + (idx+1) : '';
+            var h1 = document.createElement('input'); h1.type='hidden'; h1.name=base + suf + '_name'; h1.value=f.name;
+            var h2 = document.createElement('input'); h2.type='hidden'; h2.name=base + suf + '_mime'; h2.value=f.type || 'application/octet-stream';
+            var h3 = document.createElement('input'); h3.type='hidden'; h3.name=base + suf + '_b64';  h3.value=b64;
+            hidden.push(h1,h2,h3);
+            res();
+          };
+          fr.readAsDataURL(f);
+        }));
+      });
+      inp.value = '';
+    });
+
+    Promise.all(readers).then(function(){
+      hidden.forEach(function(h){ form.appendChild(h); });
+      form.submit();
+    }).catch(function(){
+      if (btn){ btn.disabled=false; btn.textContent='Enviar cadastro'; }
+      show(false,'Falha ao preparar anexos.');
+    });
+  });
+
+  var iframe = document.getElementById('submitFrame');
+  var first = true;
+  iframe.addEventListener('load', function(){
+    if (first){ first=false; return; }
+    if (btn){ btn.disabled=false; btn.textContent='Enviar cadastro'; }
+    show(true,'Cadastro enviado com sucesso!');
+    try { form.reset(); } catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
