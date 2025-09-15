@@ -1,0 +1,17 @@
+<!doctype html><html lang="pt-br"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cadastro ACTECmax (MIN)</title>
+<body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7f7f8;color:#0f172a">
+  <h2 style="max-width:900px;margin:24px auto 8px">Ficha Cadastral — TESTE MIN</h2>
+  <form id="form" method="POST"
+        action="https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec"
+        enctype="multipart/form-data" target="ok"
+        style="max-width:900px;margin:0 auto;background:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.06)">
+    <input type="hidden" name="_marker" value="ACTECMIN">
+    <label>Razão Social<br><input name="razao_social" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"></label><br><br>
+    <label>CNPJ<br><input name="cnpj" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"></label><br><br>
+    <label>Contrato Social (PDF/JPG/PNG)<br><input type="file" name="contrato_social" accept=".pdf,.jpg,.jpeg,.png" required></label><br><br>
+    <button type="submit" style="padding:12px 16px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:600">Enviar</button>
+  </form>
+  <iframe name="ok" style="display:none"></iframe>
+</body></html>
