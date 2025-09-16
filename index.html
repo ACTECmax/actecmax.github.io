@@ -2332,10 +2332,10 @@ function inferFieldsIfMissing(obj){
 
 
 <script id="actecmax-iframe-submit">
-(function(){{"use strict";
+(function(){"use strict";
   var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
-  function ready(fn){{ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }}
-  ready(function(){{
+  function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
+  ready(function(){
     var form = document.getElementById('cadastroForm') || document.querySelector('form');
     if(!form) return;
 
@@ -2347,128 +2347,136 @@ function inferFieldsIfMissing(obj){
 
     // Cria iframe oculto se não existir
     var iframe = document.getElementById('submitFrame');
-    if(!iframe){{
+    if(!iframe){
       iframe = document.createElement('iframe');
       iframe.name = 'submitFrame';
       iframe.id   = 'submitFrame';
       iframe.style.display = 'none';
       form.appendChild(iframe);
-    }}
+    }
 
     // Esconde APENAS o botão com texto exato 'Salvar' (não toca em Enviar/Imprimir/Limpar)
-    try {{
+    try {
       var footer = document.querySelector('.actions-footer');
-      if (footer) {{
-        footer.querySelectorAll('button, input[type=button]').forEach(function(el){{
+      if (footer) {
+        footer.querySelectorAll('button, input[type=button]').forEach(function(el){
           var label = (el.textContent||el.value||'').replace(/\s+/g,' ').trim().toLowerCase();
-          var type  = (el.getAttribute('type')||'').toLowerCase() || 'submit'; // <button> default = submit
-          if (label === 'salvar' && type !== 'submit') {{
+          var tAttr = (el.getAttribute('type')||'').toLowerCase();
+          var type  = tAttr || (el.tagName==='BUTTON' ? 'submit' : '');
+          if (label === 'salvar' && type !== 'submit') {
             el.style.display='none'; el.setAttribute('aria-hidden','true');
-          }}
-        }});
-      }}
-    }} catch(_){}
+          }
+        });
+      }
+    } catch(_){}
 
-    var submitBtn = form.querySelector('button[type=submit], input[type=submit]');
+    var submitBtn = form.querySelector('button[type=submit], input[type=submit]') || null;
+
+    // BLOQUEIA outros handlers de CLICK no botão submit que possam disparar fetch antigo
+    if (submitBtn) {
+      try { submitBtn.onclick = null; } catch(_){}
+      submitBtn.addEventListener('click', function(ev){ ev.stopImmediatePropagation(); /* não previne o default (submit continua) */ }, true);
+    }
+
     var waiting = false, tmr = null;
 
-    function finishUI(ok){{
+    function finishUI(ok){
       // Reabilita files (se desabilitados)
-      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){{
+      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
         inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
-      }});
-      if (submitBtn) {{
+      });
+      if (submitBtn) {
         var cur = (submitBtn.tagName==='BUTTON'? submitBtn.textContent : submitBtn.value) || '';
-        if(/^enviando/i.test(cur)) {{
+        if(/^enviando/i.test(cur)) {
           if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviado';
           else submitBtn.value = 'Enviado';
-        }}
+        }
         submitBtn.disabled = false;
-      }}
-      try {{ form.reset(); }} catch(_) {{}}
-    }}
-    function armTimeout(){{
+      }
+      try { form.reset(); } catch(_){}
+    }
+    function armTimeout(){
       clearTimeout(tmr);
-      tmr = setTimeout(function(){{ if(waiting){{ waiting=false; finishUI(true); }} }}, 20000);
-    }}
+      tmr = setTimeout(function(){ if(waiting){ waiting=false; finishUI(true); } }, 20000);
+    }
 
     // Ouve os sinais do Apps Script
-    window.addEventListener('message', function(ev){{
+    window.addEventListener('message', function(ev){
       if(!waiting) return;
-      if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) {{ clearTimeout(tmr); waiting=false; finishUI(true); }}
-      if (ev &&  ev.data==='ACTEC_ERR')                 {{ clearTimeout(tmr); waiting=false; finishUI(false); alert('Houve um erro no processamento.'); }}
-    }});
-    iframe.addEventListener('load',  function(){{ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); }});
-    iframe.addEventListener('error', function(){{ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); }});
+      if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) { clearTimeout(tmr); waiting=false; finishUI(true); }
+      if (ev &&  ev.data==='ACTEC_ERR')                  { clearTimeout(tmr); waiting=false; finishUI(false); alert('Houve um erro no processamento.'); }
+    });
+    iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); });
+    iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); });
 
     // Intercepta o submit e envia por iframe (sem fetch/CORS)
-    form.addEventListener('submit', function(ev){{
+    form.addEventListener('submit', function(ev){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
 
       // Gera campos _html e _pairs_json, se os helpers existirem
-      try {{
-        if (typeof renderEmailHtml === 'function') {{
-          var h = form.querySelector('input[name="_html"]'); if(!h){{ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }}
+      try {
+        if (typeof renderEmailHtml === 'function') {
+          var h = form.querySelector('input[name="_html"]'); if(!h){ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }
           h.value = renderEmailHtml(form);
-        }}
-        if (typeof collectPairs === 'function') {{
-          var j = form.querySelector('input[name="_pairs_json"]'); if(!j){{ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }}
+        }
+        if (typeof collectPairs === 'function') {
+          var j = form.querySelector('input[name="_pairs_json"]'); if(!j){ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }
           j.value = JSON.stringify(collectPairs(form));
-        }}
-      }} catch(_){}
+        }
+      } catch(_){}
 
       // Timestamp
       var ts = form.querySelector('input[name="_submitted_at"]');
-      if(!ts){{ ts=document.createElement('input'); ts.type='hidden'; ts.name='_submitted_at'; form.appendChild(ts); }}
+      if(!ts){ ts=document.createElement('input'); ts.type='hidden'; ts.name='_submitted_at'; form.appendChild(ts); }
       ts.value = new Date().toISOString();
 
       var files = Array.from(form.querySelectorAll('input[type=file]'));
       waiting = true;
 
-      if(submitBtn) {{
+      if(submitBtn) {
         submitBtn.disabled = true;
         if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviando…';
         else submitBtn.value = 'Enviando…';
-      }}
+      }
 
       // Se não há anexos, envia direto
-      if(!files.length) {{ armTimeout(); HTMLFormElement.prototype.submit.call(form); return; }}
+      if(!files.length) { armTimeout(); HTMLFormElement.prototype.submit.call(form); return; }
 
       // Converte anexos para base64 e envia
       var promises=[], hidden=[];
-      files.forEach(function(inp){{
+      files.forEach(function(inp){
         var base = inp.name || ('file_'+Math.random().toString(36).slice(2));
-        Array.from(inp.files||[]).forEach(function(f, idx){{
-          promises.push(new Promise(function(res, rej){{
+        Array.from(inp.files||[]).forEach(function(f, idx){
+          promises.push(new Promise(function(res, rej){
             var fr = new FileReader();
-            fr.onload = function(){{
+            fr.onload = function(){
               var dataUrl = fr.result || ''; var b64 = String(dataUrl).split(',')[1] || ''; var suf = inp.multiple ? ('_'+(idx+1)) : '';
               var h1=document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
               var h2=document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
               var h3=document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
               hidden.push(h1,h2,h3); res();
-            }}; fr.onerror = rej; fr.readAsDataURL(f);
-          }}));
-        }});
-      }});
+            }; fr.onerror = rej; fr.readAsDataURL(f);
+          }));
+        });
+      });
 
-      Promise.all(promises).then(function(){{
-        hidden.forEach(function(h){{ form.appendChild(h); }});
-        files.forEach(function(inp){{ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); }});
+      Promise.all(promises).then(function(){
+        hidden.forEach(function(h){ form.appendChild(h); });
+        files.forEach(function(inp){ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); });
         armTimeout();
         HTMLFormElement.prototype.submit.call(form);
-      }}).catch(function(err){{
+      }).catch(function(err){
         waiting=false;
-        if(submitBtn){{
+        if(submitBtn){
           submitBtn.disabled=false;
           if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviar'; else submitBtn.value='Enviar';
-        }}
+        }
         console && console.error && console.error('Base64 error', err);
         alert('Falha ao preparar anexos. Tente novamente.');
-      }});
-    }});
-  }});
-}})();
+      });
+    }, true);
+  });
+})();
 </script>
 
 </body>
