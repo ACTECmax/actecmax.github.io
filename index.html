@@ -2329,6 +2329,128 @@ function inferFieldsIfMissing(obj){
   }
 })();
 </script>
+<!--
+INSTRUÇÃO: Substitua TODO o bloco de scripts de envio atual pelo bloco abaixo.
+Cole este <script> no FINAL do seu index.html (depois dos demais scripts) para restaurar o comportamento estável:
+- Remove o botão "Salvar".
+- Evita que o painel de anexos intercepte o submit (data-enable-direct-submit).
+- Envia TUDO (campos + anexos) via FormData direto para o Apps Script.
+- Mantém os helpers renderEmailHtml/collectPairs que já existem no seu arquivo.
+-->
+<script id="actec-submit-patch">
+(function(){
+  // ======== CONFIGURAÇÃO ========
+  const FORMSPREE_URL = ""; // deixe vazio se não usar e-mail via Formspree
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec"; // seu Web App do Apps Script (o que está funcionando)
+  // ==============================
+
+  function $(sel, root){ return (root||document).querySelector(sel); }
+
+  // Garante que o painel de anexos NÃO bloqueie o submit padrão
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = $('#cadastroForm') || $('form');
+    if(!form) return;
+    form.setAttribute('data-enable-direct-submit','1');
+
+    // Some apenas o botão "Salvar" (mantém Limpar / Imprimir / Enviar)
+    try{
+      const footer = $('.actions-footer');
+      if(footer){
+        footer.querySelectorAll('button').forEach(btn=>{
+          const t = (btn.textContent||'').trim().toLowerCase();
+          if(t === 'salvar') btn.remove();
+        });
+      }
+    }catch(_){/* noop */}
+  });
+
+  // Converte FormData em objeto simples (usado para inferência de rótulos se precisar)
+  function formDataToObject(fd){
+    const obj = {}; for(const [k,v] of fd.entries()){ if(obj[k]!==undefined){ if(!Array.isArray(obj[k])) obj[k]=[obj[k]]; obj[k].push(v);} else { obj[k]=v; } } return obj;
+  }
+
+  // Lê rótulos/sections do DOM caso não venham prontos (opcional)
+  function inferFieldsIfMissing(obj){
+    try{
+      const f = $('#cadastroForm') || $('form'); if(!f) return obj;
+      const controls = f.querySelectorAll('input,select,textarea');
+      const fields = [];
+      function labelFor(el){
+        if(el.id){ const l=f.querySelector(`label[for="${el.id}"]`); if(l) return l.innerText.trim(); }
+        let prev=el.previousElementSibling; if(prev && (prev.tagName==='LABEL'||/label/i.test(prev.className||''))) return (prev.innerText||'').trim();
+        const wrap = el.closest && el.closest('label'); if(wrap) return (wrap.innerText||'').trim();
+        return (el.getAttribute('placeholder')||el.name||el.id||'').trim();
+      }
+      function sectionFor(el){
+        let n=el; while(n){ let p=n.previousElementSibling; while(p){ const tag=(p.tagName||'').toUpperCase(); if(/section-title|subheader/.test(p.className||'')||tag==='H2'||tag==='H3'){ return (p.innerText||'').trim(); } p=p.previousElementSibling; } n=n.parentElement; }
+        return '';
+      }
+      controls.forEach(el=>{ const t=(el.type||'').toLowerCase(); const name=(el.name||'').trim(); if(!name) return; if(['hidden','submit','button','image','file'].includes(t)) return; if((t==='radio'||t==='checkbox') && !el.checked) return; fields.push({ name, label: labelFor(el), section: sectionFor(el) }); });
+      obj._schema = fields; // ordenado
+    }catch(_){/* noop */}
+    return obj;
+  }
+
+  // Mensagem final padrão
+  function showStatus(html){
+    const host = $('#cadastroForm') || $('form'); if(!host) return; const wrap=document.createElement('div'); wrap.className='submit-status-card'; wrap.innerHTML=html; host.replaceWith(wrap);
+  }
+
+  // SUBMIT UNIFICADO (FormData -> Apps Script; opcional Formspree)
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = $('#cadastroForm') || $('form');
+    if(!form) return;
+
+    form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const oldLabel = submitBtn ? submitBtn.textContent : '';
+      if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
+
+      // Monta FormData (inclui anexos automaticamente)
+      const fd = new FormData(form);
+      fd.append('_submitted_at', new Date().toISOString());
+
+      // Injeta HTML bonito e pares (se helpers existirem no seu arquivo)
+      try{
+        if(typeof renderEmailHtml==='function'){
+          let h = form.querySelector('input[name="_html"]'); if(!h){ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }
+          h.value = renderEmailHtml(form);
+        }
+        if(typeof collectPairs==='function'){
+          let j = form.querySelector('input[name="_pairs_json"]'); if(!j){ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }
+          j.value = JSON.stringify(collectPairs(form));
+        }
+      }catch(_){/* noop */}
+
+      // Dispara e-mail via Formspree (opcional)
+      const pEmail = (FORMSPREE_URL && !/SEU_ID_AQUI/.test(FORMSPREE_URL)) ? fetch(FORMSPREE_URL, { method:'POST', headers:{'Accept':'application/json'}, body: fd }).then(r=>r.ok?{ok:true}:{ok:false,status:r.status}).catch(err=>({ok:false,error:String(err)})) : Promise.resolve({ok:false, skipped:true});
+
+      // Dispara Apps Script (usa multipart/form-data com anexos)
+      const payload = inferFieldsIfMissing(formDataToObject(fd)); // mantém compatibilidade
+      const pPlanilha = fetch(APPS_SCRIPT_URL, { method:'POST', body: fd })
+        .then(async (r)=>{ const t = await r.text().catch(()=>""); if(!r.ok) throw new Error('HTTP '+r.status+' '+t); return {ok:true, text:t}; })
+        .catch(err=>({ok:false, error:String(err)}));
+
+      // Espera ambos (sem travar UI para sempre)
+      const [emailRes, sheetRes] = await Promise.allSettled([pEmail, pPlanilha]);
+      const okSheet = sheetRes.value && sheetRes.value.ok;
+
+      if(okSheet){
+        // Sucesso
+        if(submitBtn){ submitBtn.textContent = 'Enviado'; }
+        showStatus('<h2 style="margin-bottom:6px;">Cadastro enviado</h2><p>Obrigado! Recebemos seus dados e anexos.</p><p>Você receberá uma confirmação por e-mail.</p>');
+        // Redireciona depois de alguns segundos
+        setTimeout(function(){ window.location.href='https://www.actecmax.com.br'; }, 3500);
+      } else {
+        // Falha: reabilita botão e mostra alerta simples
+        if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = oldLabel || 'Enviar'; }
+        alert('Não foi possível enviar agora. Tente novamente. '+ (sheetRes.value && sheetRes.value.error ? ('\nDetalhes: '+sheetRes.value.error) : ''));
+      }
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
