@@ -1181,60 +1181,428 @@ form{ display: block !important; }
 <label for="data">Data:</label>
 <input id="data" name="data" type="date"/>
 </div></div>
-<script id="actecmax-submit-v4">
-(function(){"use strict";
-  var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
-  function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
-  ready(function(){
-    
-    // Oculta SOMENTE o botão "Salvar" (sem afetar Enviar/Imprimir/Limpar)
-    try{
-      function isSubmitButton(el){
-        if(!el) return false;
-        var tag = (el.tagName||'').toUpperCase();
-        if(tag==='BUTTON'){
-          // Em HTML5, <button> sem type vira submit por padrão
-          var t=(el.getAttribute('type')||'submit').toLowerCase();
-          return t==='submit';
+<script>
+        function toggleRegimeEspecial() {
+            const regimeEspecialSim = document.getElementById('regimeEspecialSim');
+            const regimeEspecialDesc = document.getElementById('regimeEspecialDesc');
+            
+            regimeEspecialDesc.style.display = regimeEspecialSim.checked ? 'block' : 'none';
         }
-        if(tag==='INPUT'){
-          return (el.type||'').toLowerCase()==='submit';
+        
+        function toggleFiliais() {
+            const filiaisSim = document.getElementById('filiaisSim');
+            const filiaisCnpj = document.getElementById('filiaisCnpj');
+            
+            filiaisCnpj.style.display = filiaisSim.checked ? 'block' : 'none';
         }
-        return false;
-      }
-      // Só olha dentro do rodapé de ações, e NÃO mexe em <a>
-      var footer = document.querySelector('.actions-footer') || document;
-      footer.querySelectorAll('button, input[type=button]').forEach(function(el){
-        var label=(el.textContent||el.value||'').trim().toLowerCase();
-        if(label==='salvar' && !isSubmitButton(el)){
-          el.style.display='none';
-          el.setAttribute('aria-hidden','true');
+        
+        function toggleConjuge(socioNum) {
+            const casado = document.getElementById(`socio${socioNum}Casado`);
+            const conjugeInfo = document.getElementById(`conjuge${socioNum}Info`);
+            
+            conjugeInfo.style.display = casado.checked ? 'block' : 'none';
         }
-      });
-    }catch(_){}
+        
+        function clearForm() {
+            if (confirm('Tem certeza que deseja limpar todos os campos?')) {
+                document.getElementById('registrationForm').reset();
+                
+                // Esconder campos condicionais
+                document.getElementById('regimeEspecialDesc').style.display = 'none';
+                document.getElementById('filiaisCnpj').style.display = 'none';
+                document.getElementById('conjuge1Info').style.display = 'none';
+                document.getElementById('conjuge2Info').style.display = 'none';
+            }
+        }
+        
+        function printForm() {
+            window.print();
+        }
+        
+        function saveForm() {
+            // Aqui você pode implementar a lógica para salvar os dados
+            // Por exemplo, converter para PDF ou enviar por e-mail
+            alert('Formulário salvo com sucesso! Em uma implementação real, os dados seriam enviados ou convertidos para PDF.');
+        }
+    </script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const civilRadios = document.querySelectorAll('input[name="estado_civil"]');
+  const conjuge = document.getElementById("conjuge-info");
+  function updateConjuge() {
+    const selected = document.querySelector('input[name="estado_civil"]:checked');
+    conjuge.style.display = (selected && selected.value === "casado") ? "grid" : "none";
+  }
+  civilRadios.forEach(r => r.addEventListener("change", updateConjuge));
+  updateConjuge();
 
-        });
-      });
-
-      Promise.all(promises).then(function(){
-        hidden.forEach(function(h){ form.appendChild(h); });
-        files.forEach(function(inp){ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); });
-        armTimeout();
-        HTMLFormElement.prototype.submit.call(form);
-      }).catch(function(err){
-        waiting=false;
-        if(submitBtn){
-          submitBtn.disabled=false;
-          if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviar';
-          else submitBtn.value='Enviar';
-        }
-        console && console.error && console.error('Base64 error', err);
-        alert('Falha ao preparar anexos. Tente novamente.');
-      });
-    });
+  const chkOutros = document.getElementById("chk-outros");
+  const outros = document.getElementById("outros-interesse");
+  if (chkOutros) {
+    function updateOutros() { outros.style.display = chkOutros.checked ? "grid" : "none"; }
+    chkOutros.addEventListener("change", updateOutros);
+    updateOutros();
+  }
+});
+</script>
+</div><datalist id="ufs"><option label="Acre" value="AC"></option><option label="Alagoas" value="AL"></option><option label="Amapá" value="AP"></option><option label="Amazonas" value="AM"></option><option label="Bahia" value="BA"></option><option label="Ceará" value="CE"></option><option label="Distrito Federal" value="DF"></option><option label="Espírito Santo" value="ES"></option><option label="Goiás" value="GO"></option><option label="Maranhão" value="MA"></option><option label="Mato Grosso" value="MT"></option><option label="Mato Grosso do Sul" value="MS"></option><option label="Minas Gerais" value="MG"></option><option label="Pará" value="PA"></option><option label="Paraíba" value="PB"></option><option label="Paraná" value="PR"></option><option label="Pernambuco" value="PE"></option><option label="Piauí" value="PI"></option><option label="Rio de Janeiro" value="RJ"></option><option label="Rio Grande do Norte" value="RN"></option><option label="Rio Grande do Sul" value="RS"></option><option label="Rondônia" value="RO"></option><option label="Roraima" value="RR"></option><option label="Santa Catarina" value="SC"></option><option label="São Paulo" value="SP"></option><option label="Sergipe" value="SE"></option><option label="Tocantins" value="TO"></option></datalist><script>
+(function(){
+  function updateTitulo(){
+    var h = document.getElementById('endereco_secundario_titulo');
+    if(!h) return;
+    var v = (document.querySelector('input[name="sec_tipo"]:checked')||{}).value || 'entrega';
+    h.textContent = v==='cobranca' ? 'ENDEREÇO Cobrança' : 'ENDEREÇO Entrega';
+  }
+  function toggleConjuge(){
+    var sel = document.querySelector('input[name="estado_civil"]:checked');
+    var box = document.getElementById('conjuge_fields');
+    if(!box) return;
+    if(sel && sel.value && sel.value.toLowerCase()==='casado'){ box.style.display='block'; }
+    else { box.style.display='none'; }
+  }
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.name === 'sec_tipo'){ updateTitulo(); }
+    if(e.target && e.target.name === 'estado_civil'){ toggleConjuge(); }
   });
+  // Inicialização
+  updateTitulo();
+  toggleConjuge();
 })();
-</script></form>
+</script><script>
+(function(){
+  function setReadonly(prefix, on){
+    ['endereco','numero','complemento','bairro','cidade','estado','cep'].forEach(function(k){
+      var el = document.getElementById(prefix+'_'+k);
+      if(!el) return;
+      if(on){ el.classList.add('readonly-like'); }
+      else { el.classList.remove('readonly-like'); }
+    });
+  }
+  function attachSync(prefix){
+    setReadonly(prefix, true);
+    function sync(){
+      ['endereco','numero','complemento','bairro','cidade','estado','cep'].forEach(function(k){
+        var src = document.getElementById('principal_'+k);
+        var dst = document.getElementById(prefix+'_'+k);
+        if(src && dst){ dst.value = src.value; }
+      });
+    }
+    sync();
+    var inputs = ['endereco','numero','complemento','bairro','cidade','estado','cep']
+      .map(function(k){ return document.getElementById('principal_'+k); }).filter(Boolean);
+    inputs.forEach(function(el){ el.addEventListener('input', sync); });
+    return function(){
+      setReadonly(prefix, false);
+      inputs.forEach(function(el){ el.removeEventListener('input', sync); });
+    };
+  }
+  var detach = { sec1:null, sec2:null };
+  function applyMode(prefix, mode){
+    var block = document.getElementById(prefix==='sec1'?'block_sec1':'block_sec2');
+    if(!block) return;
+    if(mode==='same'){
+      block.style.display = 'none';
+      if(detach[prefix]){ detach[prefix](); detach[prefix]=null; }
+      detach[prefix] = attachSync(prefix);
+    }else if(mode==='custom'){
+      block.style.display = '';
+      if(detach[prefix]){ detach[prefix](); detach[prefix]=null; }
+      setReadonly(prefix, false);
+    }else{
+      block.style.display = 'none';
+      if(detach[prefix]){ detach[prefix](); detach[prefix]=null; }
+      setReadonly(prefix, false);
+    }
+  }
+  function bindMode(){
+    [['sec1_mode','sec1'], ['sec2_mode','sec2']].forEach(function(pair){
+      var nm = pair[0], px = pair[1];
+      document.querySelectorAll('input[name="'+nm+'"]').forEach(function(r){
+        r.addEventListener('change', function(){ applyMode(px, r.checked ? r.value : ''); });
+      });
+      applyMode(px, ''); 
+    });
+  }
+  function limpaCep(v){ return (v||'').replace(/\D/g,''); }
+  function attachViaCEP(prefix){
+    var cep = document.getElementById(prefix+'_cep');
+    if(!cep) return;
+    cep.addEventListener('blur', function(){
+      var v = limpaCep(cep.value);
+      if(v.length!==8) return;
+      fetch('https://viacep.com.br/ws/'+v+'/json/')
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if(data && !data.erro){
+            var m = { endereco: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: (data.uf||'').toUpperCase() };
+            Object.keys(m).forEach(function(k){
+              var el = document.getElementById(prefix+'_'+k);
+              if(el){ el.value = m[k]; }
+            });
+          }
+        }).catch(function(){});
+    });
+  }
+  function bindViaCEP(){ ['principal','sec1','sec2'].forEach(attachViaCEP); }
+
+  document.addEventListener('DOMContentLoaded', function(){ bindMode(); bindViaCEP(); });
+  bindMode(); bindViaCEP();
+})();
+</script><div class="row" id="conjuge_fields_socio2" style="display:none; margin-top:10px;"><div class="col" style="flex:0 0 46%;max-width:46%;"><div class="form-group"><label>Nome do Cônjuge:</label><input id="socio2_conjuge_nome" name="socio2_conjuge_nome" placeholder="Nome completo" type="text"/></div></div><div class="col" style="flex:0 0 27%;max-width:27%;"><div class="form-group"><label>CPF do Cônjuge:</label><input id="socio2_conjuge_cpf" inputmode="numeric" maxlength="14" name="socio2_conjuge_cpf" oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2').slice(0,14)" pattern="\d{3}\.\d{3}\.\d{3}-\d{2}" placeholder="000.000.000-00" type="text"/></div></div><div class="col" style="flex:0 0 27%;max-width:27%;"><div class="form-group"><label>RG do Cônjuge:</label><input id="socio2_conjuge_rg" maxlength="20" name="socio2_conjuge_rg" placeholder="RG" type="text"/></div></div></div><script>
+(function(){
+  function bindConjugeToggle(idx){
+    var name = 'socio'+idx+'_estado_civil';
+    var box = document.getElementById('conjuge_fields_socio'+idx);
+    if(!box) return;
+    function apply(){
+      var sel = document.querySelector('input[name="'+name+'"]:checked');
+      if(sel && sel.value && sel.value.toLowerCase()==='casado'){ box.style.display='block'; }
+      else { box.style.display='none'; }
+    }
+    document.querySelectorAll('input[name="'+name+'"]').forEach(function(r){ r.addEventListener('change', apply); });
+    apply();
+  }
+  bindConjugeToggle(1); bindConjugeToggle(2);
+})();
+</script><script>
+    (function(){
+      function bindInteresseOutros(){
+        var cb = document.getElementById('interesse_outros') || document.querySelector('input[name="interesse"][value="outros"]');
+        var box = document.getElementById('interesse_outros_box');
+        if(!cb || !box) return;
+        function apply(){ box.style.display = cb.checked ? 'block' : 'none'; }
+        cb.addEventListener('change', apply);
+        apply();
+      }
+      if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', bindInteresseOutros); }
+      else{ bindInteresseOutros(); }
+    })();
+    </script><script>
+    (function(){
+      function formatBRL(el){
+        var onlyDigits = (el.value||'').replace(/\D/g,'');
+        if(onlyDigits.length === 0){ el.value = ''; return; }
+        var intVal = parseInt(onlyDigits, 10);
+        var formatted = (intVal/100).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        el.value = 'R$ ' + formatted;
+      }
+      function bindCurrency(){
+        var els = document.querySelectorAll('input.currency-br');
+        els.forEach(function(el){
+          el.addEventListener('input', function(){ formatBRL(el); });
+          el.addEventListener('blur', function(){ formatBRL(el); });
+        });
+      }
+      if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', bindCurrency); }
+      else{ bindCurrency(); }
+    })();
+    
+            ;(function initCurrencyDefaults(){
+              try{
+                var els=document.querySelectorAll('input.currency-br');
+                els.forEach(function(el){ if(!el.value){ el.value='R$ 0,00'; } });
+              }catch(e){}
+            })();
+            </script><div class="actions-footer"><button class="btn btn-clear" onclick="clearForm()" type="button">Limpar</button><button class="btn" onclick="printForm()" type="button">Imprimir</button><button class="btn" onclick="saveForm()" type="button">Salvar</button><button class="btn btn-primary" type="submit">Enviar</button></div><script>
+(function(){
+  function isYes(input){
+    if(!input) return false;
+    var val = (input.value||"").toLowerCase();
+    if(val==="sim" || val==="s" || val==="1" || val==="true") return true;
+    var lbl = input.closest("label");
+    var txt = lbl ? lbl.textContent.trim().toLowerCase() : "";
+    return /\bsim\b/.test(txt);
+  }
+  function bindYesToggle(groupSelector, targetId){
+    var group = document.querySelector(groupSelector);
+    var target = document.getElementById(targetId);
+    if(!group || !target) return;
+    var radios = group.querySelectorAll('input[type="radio"]');
+    var update = function(){
+      var yes = false;
+      radios.forEach(function(r){ if(r.checked && isYes(r)) yes = true; });
+      target.style.display = yes ? "" : "none";
+    };
+    radios.forEach(function(r){ r.addEventListener("change", update); });
+    update();
+  }
+
+  // attach for Regime Especial & Suspensão
+  // Heuristics: pick the nearest .form-group that contains the label text.
+  function qsByLabel(rx){
+    var lbls = Array.from(document.querySelectorAll(".form-group > label"));
+    var el = lbls.find(function(l){ return rx.test((l.textContent||"").trim()); });
+    return el ? el.parentElement : null;
+  }
+
+  var rg = qsByLabel(/Participa\s+de\s+algum\s+regime\s+especial\s+de\s+tributa/i);
+  if(rg){ rg.setAttribute("data-toggle-id", "exp-regime-especial"); }
+  var sp = qsByLabel(/suspens[aã]o\s+tribut[aá]ria.*industrializa/i);
+  if(sp){ sp.setAttribute("data-toggle-id", "exp-suspensao"); }
+  var fl = qsByLabel(/possui\s+filiais/i);
+  if(fl){ fl.setAttribute("data-toggle-id", "filiais-count"); }
+
+  // Bind toggles
+  if(rg) bindYesToggle('[data-toggle-id="exp-regime-especial"]', 'exp-regime-especial');
+  if(sp) bindYesToggle('[data-toggle-id="exp-suspensao"]', 'exp-suspensao');
+  if(fl){
+    // Show/Hide count + list
+    var cntId = 'filiais-count', listId='filiais-list';
+    var upd = function(){
+      var yes=false;
+      fl.querySelectorAll('input[type="radio"]').forEach(function(r){ if(r.checked && isYes(r)) yes=true; });
+      document.getElementById(cntId).style.display = yes ? "" : "none";
+      document.getElementById(listId).style.display = (yes && (parseInt(document.getElementById('qtd_filiais').value||'0',10) > 0)) ? "" : "none";
+    };
+    fl.querySelectorAll('input[type="radio"]').forEach(function(r){ r.addEventListener("change", upd); });
+    // When quantity changes, (re)build inputs
+    var q = document.getElementById('qtd_filiais');
+    function formatCNPJ(v){
+      v = (v||"").replace(/\D/g,'');
+      v = v.slice(0,14);
+      var p = v;
+      if(p.length>12) p = p.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2}).*$/, '$1.$2.$3/$4-$5');
+      else if(p.length>8) p = p.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4}).*$/, '$1.$2.$3/$4');
+      else if(p.length>5) p = p.replace(/^(\d{2})(\d{3})(\d{0,3}).*$/, '$1.$2.$3');
+      else if(p.length>2) p = p.replace(/^(\d{2})(\d{0,3}).*$/, '$1.$2');
+      return p;
+    }
+    function buildCNPJInputs(n){
+      var wrap = document.getElementById('cnpjs_filiais');
+      if(!wrap) return;
+      wrap.innerHTML = '';
+      for(var i=1;i<=n;i++){
+        var fg = document.createElement('div');
+        fg.className = 'form-group';
+        var lb = document.createElement('label');
+        lb.textContent = 'CNPJ da Filial ' + i + ':';
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'cnpj-input';
+        inp.placeholder = '00.000.000/0000-00';
+        inp.inputMode = 'numeric';
+        inp.addEventListener('input', function(){ this.value = formatCNPJ(this.value); });
+        fg.appendChild(lb); fg.appendChild(inp);
+        wrap.appendChild(fg);
+      }
+    }
+    q.addEventListener('input', function(){
+      var n = parseInt(q.value||'0',10) || 0;
+      buildCNPJInputs(n);
+      document.getElementById(listId).style.display = (n>0) ? '' : 'none';
+    });
+    upd();
+  }
+})();</script><script>
+// >>>>>>>>>>> CONFIGURE AQUI <<<<<<<<<<
+const FORMSPREE_URL = ""; // substitua pelo seu endpoint Formspree
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziszlvKyMpc28PH-jTVtIVmVtRGdb1wcFENckPbJJQBwVy7GrtuAvO10cRCoraitkXug/exec";
+ // substitua pelo URL implantado do Apps Script
+// ^^^^^^^^^ FIM DA CONFIGURAÇÃO ^^^^^^^^^
+
+(function(){
+  function formDataToObject(fd){
+    const obj = {};
+    for(const [k,v] of fd.entries()){
+      if(obj[k] !== undefined){
+        if(!Array.isArray(obj[k])) obj[k] = [obj[k]];
+        obj[k].push(v);
+      }else{
+        obj[k] = v;
+      }
+    }
+    return obj;
+  }
+  
+function inferFieldsIfMissing(obj){
+  // Build schema from DOM so the server pode espelhar o layout
+  try{
+    const f = document.getElementById("cadastroForm") || document.querySelector("form");
+    const fields = [];
+    const controls = f.querySelectorAll("input,select,textarea");
+    function labelFor(el){
+      if(el.id){
+        const l = f.querySelector(`label[for="${el.id}"]`);
+        if(l) return l.innerText.trim();
+      }
+      // previous sibling label
+      let prev = el.previousElementSibling;
+      if(prev && (prev.tagName==="LABEL" || /label/i.test(prev.className||""))) return (prev.innerText||"").trim();
+      // wrapping label
+      const wrap = el.closest && el.closest("label");
+      if(wrap) return (wrap.innerText||"").trim();
+      // placeholder or name fallback
+      return (el.getAttribute("placeholder") || el.name || el.id || "").trim();
+    }
+    function sectionFor(el){
+      // scan up and back to find nearest section title or H2/H3
+      let n = el;
+      while(n){
+        let p = n.previousElementSibling;
+        while(p){
+          const tag = (p.tagName||"").toUpperCase();
+          if(/section-title|subheader/.test(p.className||"") || tag==="H2" || tag==="H3"){
+            return (p.innerText||"").trim();
+          }
+          p = p.previousElementSibling;
+        }
+        n = n.parentElement;
+      }
+      return "";
+    }
+    controls.forEach((el)=>{
+      const t = (el.type||"").toLowerCase();
+      const name = (el.name||"").trim();
+      if(!name) return;
+      if(["hidden","submit","button","image","file"].includes(t)) return;
+      if((t==="radio" || t==="checkbox") && !el.checked) return;
+      fields.push({ name, label: labelFor(el), section: sectionFor(el) });
+    });
+    obj._schema = fields; // ordered
+  }catch(e){}
+  return obj;
+}
+
+  function showStatus(html){
+    const host = document.getElementById("cadastroForm") || document.querySelector("form");
+    if(!host) return;
+    const wrap = document.createElement("div");
+    wrap.className = "submit-status-card";
+    wrap.innerHTML = html;
+    host.replaceWith(wrap);
+  }
+
+  const form = document.getElementById("cadastroForm") || document.querySelector("form");
+  if(!form) return;
+
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    const btn = (document.activeElement && document.activeElement.tagName==="BUTTON") ? document.activeElement : null;
+    if(btn) btn.disabled = true;
+
+    const fd = new FormData(form);
+    // add a timestamp
+    fd.append("_submitted_at", new Date().toISOString());
+
+    // 1) E-mail via Formspree (FormData)
+    const pEmail = (FORMSPREE_URL && !/SEU_ID_AQUI/.test(FORMSPREE_URL)) ? fetch(FORMSPREE_URL, {
+      method: "POST",
+      headers: { "Accept":"application/json" },
+      body: fd
+    }).then(r=>r.ok?{ok:true}:{ok:false,status:r.status}).catch(err=>({ok:false, error:String(err)})) : Promise.resolve({ok:false, error:"FORMSPREE_URL não configurado"});
+
+    // 2) Planilha via Google Apps Script (JSON)
+    const payload = inferFieldsIfMissing(formDataToObject(fd));
+    const pPlanilha = (APPS_SCRIPT_URL && !/SEU_WEBAPP_AQUI/.test(APPS_SCRIPT_URL)) ? }).then(r=>r.ok?{ok:true}:{ok:false,status:r.status}).catch(err=>({ok:false, error:String(err)})) : Promise.resolve({ok:false, error:"APPS_SCRIPT_URL não configurado"});
+
+    const [emailRes, sheetRes] = await Promise.allSettled([pEmail, pPlanilha]);
+
+    const okEmail = emailRes.value && emailRes.value.ok;
+    const okSheet = sheetRes.value && sheetRes.value.ok;
+
+    let msg = `<h2 style="margin-bottom:6px;">Cadastro enviado</h2>`;msg += `<p>Obrigado! Seus dados foram enviados com sucesso.</p>`;msg += `<p>Confirmação e cópia serão enviadas por e-mail.</p>`;showStatus(`<div class="success-card">${msg}</div>`);
+  });
+})();</script></form>
 
 <!-- Envia carimbo de data/hora junto com o formulário -->
 <script>
@@ -1960,6 +2328,147 @@ form{ display: block !important; }
     }, { once: true });
   }
 })();
+</script>
+
+
+<script id="actecmax-iframe-submit">
+(function(){{"use strict";
+  var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
+  function ready(fn){{ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }}
+  ready(function(){{
+    var form = document.getElementById('cadastroForm') || document.querySelector('form');
+    if(!form) return;
+
+    // Não mexe no layout; só garante target/action para iframe
+    form.setAttribute('action', EXEC);
+    form.setAttribute('method','POST');
+    form.setAttribute('enctype','multipart/form-data');
+    form.setAttribute('target','submitFrame');
+
+    // Cria iframe oculto se não existir
+    var iframe = document.getElementById('submitFrame');
+    if(!iframe){{
+      iframe = document.createElement('iframe');
+      iframe.name = 'submitFrame';
+      iframe.id   = 'submitFrame';
+      iframe.style.display = 'none';
+      form.appendChild(iframe);
+    }}
+
+    // Esconde APENAS o botão com texto exato 'Salvar' (não toca em Enviar/Imprimir/Limpar)
+    try {{
+      var footer = document.querySelector('.actions-footer');
+      if (footer) {{
+        footer.querySelectorAll('button, input[type=button]').forEach(function(el){{
+          var label = (el.textContent||el.value||'').replace(/\s+/g,' ').trim().toLowerCase();
+          var type  = (el.getAttribute('type')||'').toLowerCase() || 'submit'; // <button> default = submit
+          if (label === 'salvar' && type !== 'submit') {{
+            el.style.display='none'; el.setAttribute('aria-hidden','true');
+          }}
+        }});
+      }}
+    }} catch(_){}
+
+    var submitBtn = form.querySelector('button[type=submit], input[type=submit]');
+    var waiting = false, tmr = null;
+
+    function finishUI(ok){{
+      // Reabilita files (se desabilitados)
+      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){{
+        inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
+      }});
+      if (submitBtn) {{
+        var cur = (submitBtn.tagName==='BUTTON'? submitBtn.textContent : submitBtn.value) || '';
+        if(/^enviando/i.test(cur)) {{
+          if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviado';
+          else submitBtn.value = 'Enviado';
+        }}
+        submitBtn.disabled = false;
+      }}
+      try {{ form.reset(); }} catch(_) {{}}
+    }}
+    function armTimeout(){{
+      clearTimeout(tmr);
+      tmr = setTimeout(function(){{ if(waiting){{ waiting=false; finishUI(true); }} }}, 20000);
+    }}
+
+    // Ouve os sinais do Apps Script
+    window.addEventListener('message', function(ev){{
+      if(!waiting) return;
+      if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) {{ clearTimeout(tmr); waiting=false; finishUI(true); }}
+      if (ev &&  ev.data==='ACTEC_ERR')                 {{ clearTimeout(tmr); waiting=false; finishUI(false); alert('Houve um erro no processamento.'); }}
+    }});
+    iframe.addEventListener('load',  function(){{ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); }});
+    iframe.addEventListener('error', function(){{ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); }});
+
+    // Intercepta o submit e envia por iframe (sem fetch/CORS)
+    form.addEventListener('submit', function(ev){{
+      ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+
+      // Gera campos _html e _pairs_json, se os helpers existirem
+      try {{
+        if (typeof renderEmailHtml === 'function') {{
+          var h = form.querySelector('input[name="_html"]'); if(!h){{ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }}
+          h.value = renderEmailHtml(form);
+        }}
+        if (typeof collectPairs === 'function') {{
+          var j = form.querySelector('input[name="_pairs_json"]'); if(!j){{ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }}
+          j.value = JSON.stringify(collectPairs(form));
+        }}
+      }} catch(_){}
+
+      // Timestamp
+      var ts = form.querySelector('input[name="_submitted_at"]');
+      if(!ts){{ ts=document.createElement('input'); ts.type='hidden'; ts.name='_submitted_at'; form.appendChild(ts); }}
+      ts.value = new Date().toISOString();
+
+      var files = Array.from(form.querySelectorAll('input[type=file]'));
+      waiting = true;
+
+      if(submitBtn) {{
+        submitBtn.disabled = true;
+        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviando…';
+        else submitBtn.value = 'Enviando…';
+      }}
+
+      // Se não há anexos, envia direto
+      if(!files.length) {{ armTimeout(); HTMLFormElement.prototype.submit.call(form); return; }}
+
+      // Converte anexos para base64 e envia
+      var promises=[], hidden=[];
+      files.forEach(function(inp){{
+        var base = inp.name || ('file_'+Math.random().toString(36).slice(2));
+        Array.from(inp.files||[]).forEach(function(f, idx){{
+          promises.push(new Promise(function(res, rej){{
+            var fr = new FileReader();
+            fr.onload = function(){{
+              var dataUrl = fr.result || ''; var b64 = String(dataUrl).split(',')[1] || ''; var suf = inp.multiple ? ('_'+(idx+1)) : '';
+              var h1=document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
+              var h2=document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
+              var h3=document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
+              hidden.push(h1,h2,h3); res();
+            }}; fr.onerror = rej; fr.readAsDataURL(f);
+          }}));
+        }});
+      }});
+
+      Promise.all(promises).then(function(){{
+        hidden.forEach(function(h){{ form.appendChild(h); }});
+        files.forEach(function(inp){{ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); }});
+        armTimeout();
+        HTMLFormElement.prototype.submit.call(form);
+      }}).catch(function(err){{
+        waiting=false;
+        if(submitBtn){{
+          submitBtn.disabled=false;
+          if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviar'; else submitBtn.value='Enviar';
+        }}
+        console && console.error && console.error('Base64 error', err);
+        alert('Falha ao preparar anexos. Tente novamente.');
+      }});
+    }});
+  }});
+}})();
 </script>
 
 </body>
