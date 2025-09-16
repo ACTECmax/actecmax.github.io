@@ -1186,126 +1186,33 @@ form{ display: block !important; }
   var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
   ready(function(){
-    // Oculta qualquer botão com label 'Salvar' (sem mexer no layout restante)
-    try{ 
-      Array.from(document.querySelectorAll('button, input[type=button], a')).forEach(function(el){
-        var t=(el.textContent||el.value||'').trim().toLowerCase();
-        var isSubmit=(el.tagName==='INPUT' && (el.type||'').toLowerCase()==='submit') || (el.getAttribute('type')||'').toLowerCase()==='submit';
-        if(t==='salvar' && !isSubmit){ el.style.display='none'; el.setAttribute('aria-hidden','true'); }
+    
+    // Oculta SOMENTE o botão "Salvar" (sem afetar Enviar/Imprimir/Limpar)
+    try{
+      function isSubmitButton(el){
+        if(!el) return false;
+        var tag = (el.tagName||'').toUpperCase();
+        if(tag==='BUTTON'){
+          // Em HTML5, <button> sem type vira submit por padrão
+          var t=(el.getAttribute('type')||'submit').toLowerCase();
+          return t==='submit';
+        }
+        if(tag==='INPUT'){
+          return (el.type||'').toLowerCase()==='submit';
+        }
+        return false;
+      }
+      // Só olha dentro do rodapé de ações, e NÃO mexe em <a>
+      var footer = document.querySelector('.actions-footer') || document;
+      footer.querySelectorAll('button, input[type=button]').forEach(function(el){
+        var label=(el.textContent||el.value||'').trim().toLowerCase();
+        if(label==='salvar' && !isSubmitButton(el)){
+          el.style.display='none';
+          el.setAttribute('aria-hidden','true');
+        }
       });
-    }catch(_){
-    }
+    }catch(_){}
 
-    var form = document.getElementById('cadastroForm') || document.querySelector('form');
-    if(!form) return;
-
-    // Garante submissão nativa via iframe (sem fetch → sem CORS)
-    form.setAttribute('action', EXEC);
-    form.setAttribute('method','POST');
-    form.setAttribute('enctype','multipart/form-data');
-    form.setAttribute('target','submitFrame');
-
-    // Iframe oculto para receber a resposta do Apps Script
-    var iframe = document.getElementById('submitFrame');
-    if(!iframe){
-      iframe=document.createElement('iframe');
-      iframe.name='submitFrame';
-      iframe.id='submitFrame';
-      iframe.style.display='none';
-      form.appendChild(iframe);
-    }
-
-    var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
-    var waiting=false, inflightTimer=null;
-
-    function finishUI(ok){
-      // Reabilita inputs file (se foram desabilitados)
-      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
-        inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
-      });
-      if(submitBtn){
-        var cur=(submitBtn.tagName==='BUTTON'?submitBtn.textContent:submitBtn.value)||'';
-        if(/^enviando/i.test(cur)){
-          if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviado';
-          else submitBtn.value='Enviado';
-        }
-        submitBtn.disabled=false;
-      }
-      try{ form.reset(); }catch(_){}
-    }
-    function armTimeout(){
-      clearTimeout(inflightTimer);
-      inflightTimer=setTimeout(function(){
-        if(waiting){ waiting=false; finishUI(true); }
-      }, 15000);
-    }
-
-    // Sinais do Apps Script (iframe → postMessage)
-    window.addEventListener('message', function(ev){
-      if(!waiting) return;
-      if(ev && (ev.data==='ACTEC_OK' || ev.data==='OK')){ clearTimeout(inflightTimer); waiting=false; finishUI(true); }
-      if(ev &&  ev.data==='ACTEC_ERR')                { clearTimeout(inflightTimer); waiting=false; finishUI(false); alert('Houve um erro no processamento.'); }
-    });
-
-    // Fallbacks do iframe
-    iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; finishUI(true); });
-    iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; finishUI(true); });
-
-    // SUBMIT (sem fetch): converte anexos em base64 e envia nativo
-    form.addEventListener('submit', function(ev){
-      ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-
-      // Gera campos auxiliares _html e _pairs_json se os helpers existirem
-      try{ 
-        if(typeof renderEmailHtml==='function'){ 
-          var h=form.querySelector('input[name="_html"]'); 
-          if(!h){ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }
-          h.value = renderEmailHtml(form); 
-        }
-        if(typeof collectPairs==='function'){ 
-          var j=form.querySelector('input[name="_pairs_json"]'); 
-          if(!j){ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }
-          j.value = JSON.stringify(collectPairs(form)); 
-        }
-      }catch(_){}
-
-      // Timestamp
-      var ts=form.querySelector('input[name="_submitted_at"]');
-      if(!ts){ ts=document.createElement('input'); ts.type='hidden'; ts.name='_submitted_at'; form.appendChild(ts); }
-      ts.value = new Date().toISOString();
-
-      var files = Array.from(form.querySelectorAll('input[type=file]'));
-      waiting=true;
-
-      if(submitBtn){
-        submitBtn.disabled=true;
-        if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…';
-        else submitBtn.value='Enviando…';
-      }
-
-      if(!files.length){
-        armTimeout();
-        HTMLFormElement.prototype.submit.call(form);
-        return;
-      }
-
-      var promises=[], hidden=[];
-      files.forEach(function(inp){
-        var base = inp.name || ('file_'+Math.random().toString(36).slice(2));
-        Array.from(inp.files||[]).forEach(function(f, idx){
-          promises.push(new Promise(function(res, rej){
-            var fr=new FileReader();
-            fr.onload=function(){
-              var dataUrl=fr.result||''; 
-              var b64=String(dataUrl).split(',')[1]||''; 
-              var suf=inp.multiple?('_'+(idx+1)):'';
-              var h1=document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
-              var h2=document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type||'application/octet-stream';
-              var h3=document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
-              hidden.push(h1,h2,h3); res();
-            };
-            fr.onerror=rej; fr.readAsDataURL(f);
-          }));
         });
       });
 
