@@ -2329,125 +2329,71 @@ function inferFieldsIfMissing(obj){
   }
 })();
 </script>
-
-
 <script>
-(function(){ "use strict";
-  var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
-  function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
-  ready(function(){
-    var form = document.getElementById('cadastroForm') || document.querySelector('form');
-    if(!form) return;
+(function(){
+  "use strict";
+  // Guarda anti-refresh só DURANTE o envio (não mexe em layout/fluxo do botão)
+  var sending = false, timer = null, oldTitle = document.title;
 
-    // garante atributos do POST
-    form.setAttribute('action', EXEC);
-    form.setAttribute('method','POST');
-    form.setAttribute('enctype','multipart/form-data');
-    form.setAttribute('target','submitFrame');
-
-    // iframe oculto destino
-    var iframe = document.getElementById('submitFrame');
-    if(!iframe){
-      iframe = document.createElement('iframe');
-      iframe.name = 'submitFrame';
-      iframe.id   = 'submitFrame';
-      iframe.style.display = 'none';
-      form.appendChild(iframe);
+  function startGuards(){
+    if (sending) return;
+    sending = true;
+    window.addEventListener("beforeunload", beforeUnloadHandler);
+    document.addEventListener("keydown", keyBlock, true);
+    // (opcional) mostrar "Enviando…" no título da aba:
+    // document.title = "Enviando… • " + oldTitle;
+  }
+  function stopGuards(){
+    if (!sending) return;
+    sending = false;
+    window.removeEventListener("beforeunload", beforeUnloadHandler);
+    document.removeEventListener("keydown", keyBlock, true);
+    clearTimeout(timer);
+    document.title = oldTitle;
+  }
+  function beforeUnloadHandler(e){
+    if (!sending) return;
+    e.preventDefault();
+    e.returnValue = ""; // prompt nativo: "Tem certeza que deseja sair?"
+  }
+  function keyBlock(e){
+    if (!sending) return;
+    var k = e.key || "";
+    if (k === "F5" || e.keyCode === 116 || (k.toLowerCase() === "r" && (e.ctrlKey || e.metaKey))){
+      e.preventDefault();
+      e.stopPropagation();
     }
+  }
 
-    var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
-    var waiting = false;
-    var inflightTimer = null;
+  // Aciona quando sua form envia (NÃO cancela o submit!)
+  document.addEventListener("submit", function(ev){
+    var f = ev.target;
+    // Limita à sua ficha (id=cadastroForm) ou forms que usam o iframe de envio
+    if (!(f && (f.id === "cadastroForm" || f.getAttribute("target") === "submitFrame"))) return;
+    startGuards();
+    clearTimeout(timer);
+    // Fallback: destrava mesmo se o iframe não disparar 'load'
+    timer = setTimeout(stopGuards, 20000); // 20s de tolerância
+  }, true);
 
-    function cleanupUI(){
-      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
-        inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
-      });
-      if(submitBtn){
-        submitBtn.disabled=false;
-        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || submitBtn.textContent || 'Enviar';
-        else submitBtn.value = submitBtn.dataset._txt || submitBtn.value || 'Enviar';
-      }
-      try { form.reset(); } catch(e){}
+  // Desarma quando o Apps Script responde (postMessage do doPost)
+  window.addEventListener("message", function(ev){
+    if (!ev) return;
+    if (ev.data === "ACTEC_OK" || ev.data === "OK" || ev.data === "ACTEC_ERR"){
+      stopGuards();
     }
-
-    function armTimeout(){
-      clearTimeout(inflightTimer);
-      inflightTimer = setTimeout(function(){
-        if(waiting){ waiting=false; cleanupUI(); }
-      }, 10000);
-    }
-
-    // Sinal do servidor (postMessage vindo do Apps Script)
-    window.addEventListener('message', function(ev){
-      if(ev && (ev.data==='ACTEC_OK' || ev.data==='OK')){ clearTimeout(inflightTimer); waiting=false; cleanupUI(); }
-      if(ev && ev.data==='ACTEC_ERR'){ clearTimeout(inflightTimer); waiting=false; cleanupUI(); alert('Houve um erro no processamento.'); }
-    });
-
-    // Fallback do iframe
-    iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; cleanupUI(); });
-    iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; cleanupUI(); });
-
-    form.addEventListener('submit', function(ev){
-      ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-
-      var files = Array.from(form.querySelectorAll('input[type=file]'));
-      waiting = true;
-
-      if(submitBtn){
-        submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value);
-        submitBtn.disabled = true;
-        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviando…';
-        else submitBtn.value = 'Enviando…';
-      }
-
-      // Sem anexos → envia direto
-      if(!files.length){
-        armTimeout();
-        HTMLFormElement.prototype.submit.call(form);
-        return;
-      }
-
-      // Com anexos → converte tudo para base64
-      var promises = [], hidden = [];
-      files.forEach(function(inp){
-        var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
-        Array.from(inp.files||[]).forEach(function(f, idx){
-          promises.push(new Promise(function(res, rej){
-            var fr = new FileReader();
-            fr.onload = function(){
-              var dataUrl = fr.result || '';
-              var b64 = String(dataUrl).split(',')[1] || '';
-              var suf = inp.multiple ? '_' + (idx+1) : '';
-              var h1 = document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
-              var h2 = document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
-              var h3 = document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
-              hidden.push(h1,h2,h3); res();
-            };
-            fr.onerror = rej;
-            fr.readAsDataURL(f);
-          }));
-        });
-      });
-
-      Promise.all(promises).then(function(){
-        hidden.forEach(function(h){ form.appendChild(h); });
-        files.forEach(function(inp){ inp.disabled=true; inp.setAttribute('data-disabled-during-submit','1'); });
-        armTimeout();
-        HTMLFormElement.prototype.submit.call(form);
-      }).catch(function(err){
-        waiting=false;
-        if(submitBtn){
-          submitBtn.disabled=false;
-          if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar';
-          else submitBtn.value = submitBtn.dataset._txt || 'Enviar';
-        }
-        console && console.error && console.error('Base64 error', err);
-        alert('Falha ao preparar anexos. Tente novamente.');
-      });
-    });
   });
-})(); 
+
+  // Fallback extra: se existir o iframe de envio, usa 'load'/'error' para destravar
+  window.addEventListener("load", function(){
+    var iframe = document.getElementById("submitFrame") || document.querySelector('iframe[name="submitFrame"]');
+    if (!iframe) return;
+    iframe.addEventListener("load",  stopGuards);
+    iframe.addEventListener("error", stopGuards);
+  });
+})();
+</script>
+
 </script>
 </body>
 </html>
