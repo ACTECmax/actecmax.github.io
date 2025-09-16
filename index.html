@@ -2170,194 +2170,30 @@ function inferFieldsIfMissing(obj){
 </script>
 
 
-<!-- docsAttachPanel script (restores full body without style changes) -->
-<script>
-(function(){
-  function $(sel, root){ return (root||document).querySelector(sel); }
-  function $all(sel, root){ return Array.from((root||document).querySelectorAll(sel)); }
-
-  const PANEL_ID = "docsAttachPanel";
-  const ITEMS = [
-    {key:"contrato_social", label:"Contrato Social"},
-    {key:"cartao_cnpj", label:"Junta Comercial"},
-    {key:"inscricao_estadual", label:"Doc. Responsável"},
-    {key:"comprovante_endereco", label:"Comprovante de Endereço"},
-    {key:"outros", label:"Outros"}
-  ];
-  const PER_FILE_LIMIT = 10*1024*1024;  // 10 MB
-  const TOTAL_LIMIT    = 20*1024*1024;  // 20 MB
-
-  function human(x){ return (x/1024/1024).toFixed(2)+" MB"; }
-
-  function buildRow(item){
-    const row = document.createElement("div");
-    row.setAttribute("data-doc", item.key);
-    row.style.display="flex";
-    row.style.alignItems="center";
-    row.style.justifyContent="space-between";
-    row.style.gap="12px";
-    row.style.padding="10px 12px";
-    row.style.margin="8px 0";
-    row.style.border="1px solid #e6e6e6";
-    row.style.borderRadius="10px";
-    row.style.background="#fff";
-
-    const left = document.createElement("div");
-    left.style.display="flex";
-    left.style.flexDirection="column";
-    left.style.flex="1";
-
-    const title = document.createElement("div");
-    title.style.fontWeight="700";
-    title.style.fontSize="16px";
-    title.textContent = item.label;
-
-    const info = document.createElement("div");
-    info.textContent = "Nenhum arquivo";
-    info.style.opacity = "0.85";
-    info.style.fontSize="14px";
-
-    left.appendChild(title);
-    left.appendChild(info);
-
-    const right = document.createElement("div");
-    right.style.display="flex";
-    right.style.gap="8px";
-
-    const file = document.createElement("input");
-    file.type = "file";
-    file.style.display = "none";
-
-    const btnAttach = document.createElement("button");
-    btnAttach.type = "button";
-    btnAttach.className = "btn btn-primary";
-    btnAttach.textContent = "Anexar";
-
-    const btnView = document.createElement("button");
-    btnView.type = "button";
-    btnView.className = "btn btn-clear";
-    btnView.textContent = "Visualizar";
-    btnView.disabled = true;
-
-    const btnRemove = document.createElement("button");
-    btnRemove.type = "button";
-    btnRemove.className = "btn btn-clear";
-    btnRemove.textContent = "Remover";
-    btnRemove.disabled = true;
-
-    let fileState = null;
-
-    btnAttach.addEventListener("click", ()=> file.click());
-    file.addEventListener("change", ()=>{
-      const f = file.files && file.files[0] ? file.files[0] : null;
-      if (!f){ info.textContent="Nenhum arquivo"; btnView.disabled = btnRemove.disabled = true; fileState = null; return; }
-      if (f.size > PER_FILE_LIMIT){ alert("Este arquivo excede o limite permitido (10 MB por arquivo / 20 MB no total). Selecione um arquivo menor."); file.value=""; return; }
-
-      // total check: sum of current selected in panel
-      const allHidden = $all('input[type="file"]', panel);
-      let total = 0;
-      allHidden.forEach(inp=>{ if (inp.files && inp.files[0]) total += inp.files[0].size; });
-      if (total > TOTAL_LIMIT){ alert("Limite total de 20 MB atingido. Remova algum anexo ou substitua por arquivos menores."); file.value=""; return; }
-
-      fileState = f;
-      info.textContent = f.name + " (" + human(f.size) + ")";
-      btnView.disabled = false;
-      btnRemove.disabled = false;
-    });
-
-    btnView.addEventListener("click", ()=>{
-      if (!fileState){ return; }
-      if (/^image\//i.test(fileState.type)){
-        const url = URL.createObjectURL(fileState);
-        const w = window.open(url, "_blank"); setTimeout(()=>URL.revokeObjectURL(url), 30000);
-      } else if (fileState.type === "application/pdf"){
-        const url = URL.createObjectURL(fileState);
-        window.open(url, "_blank"); setTimeout(()=>URL.revokeObjectURL(url), 30000);
-      } else {
-        alert("Visualização indisponível para este formato; o arquivo será enviado como anexo.");
-      }
-    });
-
-    btnRemove.addEventListener("click", ()=>{
-      file.value = "";
-      fileState = null;
-      info.textContent = "Nenhum arquivo";
-      btnView.disabled = true;
-      btnRemove.disabled = true;
-    });
-
-    right.appendChild(btnAttach);
-    right.appendChild(btnView);
-    right.appendChild(btnRemove);
-
-    row.appendChild(left);
-    row.appendChild(right);
-    row.appendChild(file);
-    return row;
-  }
-
-  const panel = document.getElementById(PANEL_ID);
-  if (!panel) return;
-
-  // Title + limits hint
-  const hint = document.createElement("div");
-  hint.style.margin = "10px 0 14px 0";
-  hint.innerHTML = 'Tamanho máximo por arquivo: <strong>10 MB</strong>; total por envio: <strong>20 MB</strong>.';
-  panel.appendChild(hint);
-
-  ITEMS.forEach(item => panel.appendChild(buildRow(item)));
-
-  // Hook into form submit to append files to FormData (no ZIP)
-  const form = panel.closest("form") || document.querySelector("form");
-  if (form){
-    form.addEventListener("submit", function(ev){
-      const fd = new FormData(form);
-      // Append files
-      $all('div[data-doc]', panel).forEach(row=>{
-        const key = row.getAttribute("data-doc");
-        const inp = row.querySelector('input[type="file"]');
-        if (inp && inp.files && inp.files[0]){
-          fd.append(key, inp.files[0], inp.files[0].name);
-        }
-      });
-      // If the form isn't configured to submit directly, prevent default
-      if (!form.hasAttribute("data-enable-direct-submit")){
-        ev.preventDefault();
-        const endpoint = form.getAttribute("data-email-endpoint") || form.getAttribute("action") || "/api/send-cadastro";
-        fetch(endpoint, { method:"POST", body: fd }).then(r=>{
-          if(!r.ok) throw new Error("Falha no envio");
-          alert("Cadastro enviado com sucesso. Você receberá uma confirmação por e-mail.");
-        }).catch(()=> alert("Não foi possível enviar o cadastro agora. Por favor, tente novamente."));
-      }
-    }, { once: true });
-  }
-})();
-</script>
-
-
-<script>
 <script>
 (function(){"use strict";
+  // URL /exec já em produção:
   var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
 
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
   ready(function(){
-    // Remove botão "Salvar" se existir (visual only)
-    Array.from(document.querySelectorAll('button, input[type=button], a')).forEach(function(el){
-      var t=(el.textContent||el.value||'').trim().toLowerCase();
-      var n=(el.name||el.id||'').toLowerCase();
-      if (t==='salvar' || /(^|[-_])salvar($|[-_])/.test(n)) { try{ el.remove(); }catch(e){} }
-    });
-
     var form = document.getElementById('cadastroForm') || document.querySelector('form');
     if(!form) return;
 
-    form.setAttribute('action', EXEC);
+    // Só garante os atributos necessários (sem mexer no resto)
+    if(form.action !== EXEC) form.setAttribute('action', EXEC);
     form.setAttribute('method','POST');
     form.setAttribute('enctype','multipart/form-data');
     form.setAttribute('target','submitFrame');
-    try { form.onsubmit = null; } catch(e){}
 
+    // Esconde apenas botões "Salvar" que NÃO são o Enviar
+    Array.from(document.querySelectorAll('button, input[type=button], a')).forEach(function(el){
+      var label=(el.textContent||el.value||'').trim().toLowerCase();
+      var isSubmit=(el.tagName==='INPUT' && (el.type||'').toLowerCase()==='submit') || (el.getAttribute('type')||'').toLowerCase()==='submit';
+      if(label==='salvar' && !isSubmit){ el.style.display='none'; el.setAttribute('aria-hidden','true'); }
+    });
+
+    // Iframe oculto para a resposta do GAS
     var iframe = document.getElementById('submitFrame');
     if(!iframe){
       iframe=document.createElement('iframe');
@@ -2368,151 +2204,91 @@ function inferFieldsIfMissing(obj){
     }
 
     var submitBtn = form.querySelector('button[type=submit],input[type=submit]');
-    var waiting = false;
-    var inflightTimer = null;
+    var waiting=false, inflightTimer=null;
 
-    // ---------- aviso/segurança ----------
-    var guard = {overlay:null, installed:false};
-
-    function showOverlayHint(msg){
+    // Aviso discreto + guardas contra refresh enquanto envia
+    var guard = { overlay:null, on:false };
+    function showHint(msg){
       if(!guard.overlay){
         var el=document.createElement('div');
-        el.setAttribute('role','status');
-        el.setAttribute('aria-live','polite');
-        el.style.position='fixed';
-        el.style.zIndex='2147483647';
-        el.style.right='16px';
-        el.style.bottom='16px';
-        el.style.background='rgba(11,45,94,0.95)';
-        el.style.color='#fff';
-        el.style.padding='10px 14px';
-        el.style.borderRadius='12px';
-        el.style.boxShadow='0 8px 24px rgba(0,0,0,.25)';
-        el.style.font='500 14px/1.3 Segoe UI,Arial,system-ui,sans-serif';
-        el.style.pointerEvents='none';
-        el.style.transition='opacity .2s ease, transform .2s ease';
-        guard.overlay = el;
-        document.body.appendChild(el);
+        el.role='status'; el.setAttribute('aria-live','polite');
+        el.style.cssText='position:fixed;right:16px;bottom:16px;z-index:2147483647;background:rgba(11,45,94,0.95);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);font:500 14px/1.3 Segoe UI,Arial,system-ui,sans-serif;pointer-events:none;transition:opacity .2s,transform .2s;';
+        document.body.appendChild(el); guard.overlay=el;
       }
       guard.overlay.textContent = msg || '⏳ Enviando… não atualize a página.';
-      guard.overlay.style.opacity='1';
-      guard.overlay.style.transform='translateY(0)';
+      guard.overlay.style.opacity='1'; guard.overlay.style.transform='translateY(0)';
     }
-    function hideOverlayHint(){
-      if(guard.overlay){
-        guard.overlay.style.opacity='0';
-        guard.overlay.style.transform='translateY(8px)';
-      }
-    }
-    function beforeUnloadHandler(e){
-      if(!waiting) return;
-      e.preventDefault(); e.returnValue='';
-    }
-    function keyGuard(e){
-      if(!waiting) return;
-      var isF5 = (e.key==='F5' || e.keyCode===116);
-      var isReloadCombo = (e.key && e.key.toLowerCase()==='r' && (e.ctrlKey||e.metaKey));
-      if(isF5 || isReloadCombo){ e.preventDefault(); e.stopPropagation(); showOverlayHint('⏳ Enviando… aguarde (não atualize a página)'); }
-    }
-    function startGuards(){
-      if(guard.installed) return;
-      guard.installed = true;
-      window.addEventListener('beforeunload', beforeUnloadHandler);
-      document.addEventListener('keydown', keyGuard, true);
-      showOverlayHint('⏳ Enviando… não atualize a página.');
-    }
-    function stopGuards(){
-      if(!guard.installed) return;
-      guard.installed = false;
-      window.removeEventListener('beforeunload', beforeUnloadHandler);
-      document.removeEventListener('keydown', keyGuard, true);
-      hideOverlayHint();
-    }
-    // -------------------------------------
+    function hideHint(){ if(guard.overlay){ guard.overlay.style.opacity='0'; guard.overlay.style.transform='translateY(8px)'; } }
+    function startGuards(){ if(guard.on) return; guard.on=true; window.onbeforeunload=function(e){ if(waiting){ e.preventDefault(); e.returnValue=''; } }; document.addEventListener('keydown',keyBlock,true); showHint(); }
+    function stopGuards(){ if(!guard.on) return; guard.on=false; window.onbeforeunload=null; document.removeEventListener('keydown',keyBlock,true); hideHint(); }
+    function keyBlock(e){ if(!waiting) return; var k=e.key||''; if(k==='F5'||e.keyCode===116||(k.toLowerCase()==='r'&&(e.ctrlKey||e.metaKey))){ e.preventDefault(); e.stopPropagation(); showHint('⏳ Enviando… aguarde (não atualize a página)'); } }
 
-    function thankAndRedirect(){
-      // Agradece e redireciona sem mexer no layout
-      showOverlayHint('✅ Obrigado! Cadastro enviado com sucesso. Redirecionando…');
-      // se seu botão já troca para "Enviado" por outro script, não forçamos nada aqui
-      setTimeout(function(){
-        window.location.href = 'https://www.actecmax.com.br/';
-      }, 1200);
-    }
-
-    function cleanupUI(showOk){
+    function finishUI(ok){
+      // reabilita inputs file temporariamente desabilitados
       Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
         inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
       });
-
-      // Mantém seu comportamento atual: se seu próprio script escrever "Enviado", não sobrescrevemos
       if(submitBtn){
-        var current = (submitBtn.tagName==='BUTTON') ? submitBtn.textContent : submitBtn.value;
-        // Se ainda estiver "Enviando…", troca para "Enviado"
-        if (/^enviando/i.test(current)) {
-          if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviado';
-          else submitBtn.value = 'Enviado';
+        // se ainda estiver "Enviando…", troca para "Enviado"
+        var cur=(submitBtn.tagName==='BUTTON')?submitBtn.textContent:submitBtn.value;
+        if(/^enviando/i.test(cur)){
+          if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviado';
+          else submitBtn.value='Enviado';
         }
         submitBtn.disabled=false;
       }
-
-      try { form.reset(); } catch(e){}
+      try{ form.reset(); }catch(_){}
       stopGuards();
 
-      if (showOk) thankAndRedirect();
+      if(ok){
+        // Agradece + redireciona
+        showHint('✅ Obrigado! Cadastro enviado com sucesso. Redirecionando…');
+        setTimeout(function(){ window.location.href='https://www.actecmax.com.br/'; }, 1200);
+      }
     }
 
-    function armTimeout(){
-      clearTimeout(inflightTimer);
-      inflightTimer = setTimeout(function(){
-        if(waiting){ waiting=false; cleanupUI(true); }
-      }, 10000);
-    }
+    function armTimeout(){ clearTimeout(inflightTimer); inflightTimer=setTimeout(function(){ if(waiting){ waiting=false; finishUI(true); } }, 10000); }
 
-    // Sinal do servidor (Apps Script envia postMessage)
+    // Sinais do servidor (postMessage do Apps Script)
     window.addEventListener('message', function(ev){
-      if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) { clearTimeout(inflightTimer); waiting=false; cleanupUI(true); }
-      if (ev && ev.data==='ACTEC_ERR') { clearTimeout(inflightTimer); waiting=false; cleanupUI(false); alert('Houve um erro no processamento.'); }
+      if(ev && (ev.data==='ACTEC_OK'||ev.data==='OK')){ clearTimeout(inflightTimer); waiting=false; finishUI(true); }
+      if(ev && ev.data==='ACTEC_ERR'){ clearTimeout(inflightTimer); waiting=false; finishUI(false); alert('Houve um erro no processamento.'); }
     });
 
-    // Fallbacks do iframe
-    iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; cleanupUI(true); });
-    iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; cleanupUI(true); });
+    // Fallback do iframe
+    iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; finishUI(true); });
+    iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(inflightTimer); waiting=false; finishUI(true); });
 
+    // Intercepta submit para preparar anexos em base64 (mantendo seu visual)
     form.addEventListener('submit', function(ev){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
 
       var files = Array.from(form.querySelectorAll('input[type=file]'));
-      waiting = true; startGuards();
+      waiting=true; startGuards();
 
       if(submitBtn){
-        submitBtn.dataset._txt = (submitBtn.tagName==='BUTTON' ? submitBtn.textContent : submitBtn.value);
-        submitBtn.disabled = true;
-        if(submitBtn.tagName==='BUTTON') submitBtn.textContent = 'Enviando…';
-        else submitBtn.value = 'Enviando…';
+        submitBtn.disabled=true;
+        if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…'; else submitBtn.value='Enviando…';
       }
 
-      if(!files.length){
-        armTimeout();
-        HTMLFormElement.prototype.submit.call(form);
-        return;
-      }
+      // sem anexos → envia direto
+      if(!files.length){ armTimeout(); HTMLFormElement.prototype.submit.call(form); return; }
 
+      // com anexos → converte tudo p/ base64 e envia
       var promises=[], hidden=[];
       files.forEach(function(inp){
         var base = inp.name || ('file_' + Math.random().toString(36).slice(2));
-        Array.from(inp.files||[]).forEach(function(f, idx){
-          promises.push(new Promise(function(res, rej){
-            var fr = new FileReader();
-            fr.onload = function(){
-              var dataUrl = fr.result || '';
-              var b64 = String(dataUrl).split(',')[1] || '';
-              var suf = inp.multiple ? '_' + (idx+1) : '';
-              var h1 = document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
-              var h2 = document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type || 'application/octet-stream';
-              var h3 = document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
+        Array.from(inp.files||[]).forEach(function(f,idx){
+          promises.push(new Promise(function(res,rej){
+            var fr=new FileReader();
+            fr.onload=function(){
+              var dataUrl=fr.result||''; var b64=String(dataUrl).split(',')[1]||''; var suf=inp.multiple?('_'+(idx+1)):'';
+              var h1=document.createElement('input'); h1.type='hidden'; h1.name=base+suf+'_name'; h1.value=f.name;
+              var h2=document.createElement('input'); h2.type='hidden'; h2.name=base+suf+'_mime'; h2.value=f.type||'application/octet-stream';
+              var h3=document.createElement('input'); h3.type='hidden'; h3.name=base+suf+'_b64';  h3.value=b64;
               hidden.push(h1,h2,h3); res();
             };
-            fr.onerror = rej; fr.readAsDataURL(f);
+            fr.onerror=rej; fr.readAsDataURL(f);
           }));
         });
       });
@@ -2526,8 +2302,7 @@ function inferFieldsIfMissing(obj){
         waiting=false; stopGuards();
         if(submitBtn){
           submitBtn.disabled=false;
-          if(submitBtn.tagName==='BUTTON') submitBtn.textContent = submitBtn.dataset._txt || 'Enviar';
-          else submitBtn.value = submitBtn.dataset._txt || 'Enviar';
+          if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviar'; else submitBtn.value='Enviar';
         }
         console && console.error && console.error('Base64 error', err);
         alert('Falha ao preparar anexos. Tente novamente.');
@@ -2536,6 +2311,7 @@ function inferFieldsIfMissing(obj){
   });
 })();
 </script>
+
 
 </body>
 </html>
