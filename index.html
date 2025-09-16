@@ -2331,21 +2331,79 @@ function inferFieldsIfMissing(obj){
 </script>
 
 
-<script id="actecmax-iframe-submit-v5">
+<!-- ACTECmax submission & UX helper (v6) -->
+<style id="actecmax-ux-style">
+  #actecmaxOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.55);z-index:99999}
+  #actecmaxOverlay .panel{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:22px 20px;max-width:520px;width:92%;font-family:Segoe UI,Roboto,Arial,sans-serif;color:#0f172a}
+  #actecmaxOverlay .title{font-weight:700;margin:0 0 8px 0}
+  #actecmaxOverlay .muted{color:#64748b;margin:0 0 14px 0}
+  #actecmaxOverlay .row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  #actecmaxOverlay .btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;cursor:pointer;font-weight:600}
+  #actecmaxOverlay .btn.primary{background:linear-gradient(90deg,#0b2d5e,#d61a1a);color:#fff}
+  #actecmaxOverlay .btn.ghost{background:#f1f5f9;color:#0f172a}
+  .actec-spinner{width:26px;height:26px;border:3px solid #e5e7eb;border-top-color:#0b2d5e;border-radius:50%;animation:actec-spin 1s linear infinite;margin-right:8px;display:inline-block;vertical-align:middle}
+  @keyframes actec-spin{to{transform:rotate(360deg)}}
+</style>
+<div id="actecmaxOverlay" aria-hidden="true">
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="actecTitle">
+    <div id="actecStateSending">
+      <div class="title" id="actecTitle"><span class="actec-spinner"></span> Enviando cadastro…</div>
+      <p class="muted">Por favor, não feche, não atualize e não clique em outros botões enquanto finalizamos o envio.</p>
+    </div>
+    <div id="actecStateDone" style="display:none">
+      <div class="title">Cadastro enviado com sucesso!</div>
+      <p class="muted">Obrigado. Seus dados e documentos foram recebidos.</p>
+      <div class="row">
+        <a class="btn ghost" id="actecClose">Fechar</a>
+        <a class="btn primary" id="actecGoSite" href="https://www.actecmax.com.br">Voltar ao site</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="actecmax-iframe-submit-v6">
 (function(){"use strict";
   var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
+  function on(el,ev,fn,cap){ if(el) el.addEventListener(ev,fn,!!cap); }
+  function $(sel,root){ return (root||document).querySelector(sel); }
+  function $all(sel,root){ return Array.from((root||document).querySelectorAll(sel)); }
+
   ready(function(){
     var form = document.getElementById('cadastroForm') || document.querySelector('form');
     if(!form) return;
 
-    // Submissão por iframe (sem CORS)
+    // Overlay elements
+    var overlay = document.getElementById('actecmaxOverlay');
+    var stSend  = document.getElementById('actecStateSending');
+    var stDone  = document.getElementById('actecStateDone');
+    var btnClose= document.getElementById('actecClose');
+    var btnSite = document.getElementById('actecGoSite');
+
+    function showSending(){
+      if(!overlay) return;
+      overlay.style.display='flex';
+      overlay.setAttribute('aria-hidden','false');
+      stSend.style.display='block';
+      stDone.style.display='none';
+      try{ document.body.style.pointerEvents='none'; }catch(_){}
+      try{ window.onbeforeunload = function(){ return 'O envio está em andamento. Tem certeza que deseja sair?'; }; }catch(_){}
+    }
+    function showDone(){
+      if(!overlay) return;
+      stSend.style.display='none';
+      stDone.style.display='block';
+      try{ document.body.style.pointerEvents=''; }catch(_){}
+      try{ window.onbeforeunload = null; }catch(_){}
+    }
+    on(btnClose,'click',function(){ overlay.style.display='none'; overlay.setAttribute('aria-hidden','true'); });
+
+    // Envio via iframe (CORS-free)
     form.setAttribute('action', EXEC);
     form.setAttribute('method','POST');
     form.setAttribute('enctype','multipart/form-data');
     form.setAttribute('target','submitFrame');
 
-    // Iframe oculto
     var iframe = document.getElementById('submitFrame');
     if(!iframe){
       iframe = document.createElement('iframe');
@@ -2355,29 +2413,45 @@ function inferFieldsIfMissing(obj){
       form.appendChild(iframe);
     }
 
-    // ====== ESCONDER APENAS "Salvar" (robusto) ======
+    // ==== Esconder APENAS o "Salvar" (qualquer markup) ====
     function isSubmitButton(el){
       if(!el) return false;
       var tag=(el.tagName||'').toUpperCase();
-      if(tag==='BUTTON'){ var t=(el.getAttribute('type')||'submit').toLowerCase(); return t==='submit'; }
-      if(tag==='INPUT'){ return (el.type||'').toLowerCase()==='submit'; }
+      if(tag==='BUTTON'){
+        var t=(el.getAttribute('type')||'submit').toLowerCase();
+        return t==='submit';
+      }
+      if(tag==='INPUT'){
+        return (el.type||'').toLowerCase()==='submit';
+      }
       return false;
     }
-    function norm(t){
-      return String(t||'').replace(/\s+/g,' ').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
+    function norm(s){
+      return String(s||'')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/\s+/g,' ').replace(/[\u200B-\u200D\uFEFF]/g,'')
+        .trim().toLowerCase();
+    }
+    function getAllLabels(el){
+      var parts=[el.textContent||'', el.value||'', el.getAttribute && (el.getAttribute('aria-label')||''), el.getAttribute && (el.getAttribute('title')||'')];
+      if(el.id){ parts.push(el.id); }
+      if(el.className){ parts.push(String(el.className)); }
+      return norm(parts.filter(Boolean).join(' '));
     }
     function findClickable(el){
-      return el.closest('button, a, [role="button"], input[type=button], .btn, .button') || el;
+      return el.closest && (el.closest('button, a, [role=\"button\"], input[type=button], .btn, .button') || el) || el;
     }
     function hideSalvar(){
       try{
         var scope = document.querySelector('.actions-footer') || document;
-        scope.querySelectorAll('*').forEach(function(el){
-          var label = norm(el.textContent || el.value || '');
-          if(label === 'salvar'){
+        $all('*', scope).forEach(function(el){
+          var txt = getAllLabels(el);
+          if(!txt) return;
+          if(txt.indexOf('salvar')>-1 || txt.indexOf('save')>-1 || txt.indexOf('gravar')>-1){
             var target = findClickable(el);
-            var type = (target.getAttribute && (target.getAttribute('type')||'').toLowerCase()) || '';
-            var isSubmit = (target.tagName==='INPUT' && type==='submit') || (target.tagName==='BUTTON' && (type==='' || type==='submit'));
+            if(!target) return;
+            var t = (target.getAttribute && (target.getAttribute('type')||'').toLowerCase()) || '';
+            var isSubmit = (target.tagName==='INPUT' && t==='submit') || (target.tagName==='BUTTON' && (t==='' || t==='submit'));
             if(!isSubmit){
               target.style.display='none';
               target.setAttribute('aria-hidden','true');
@@ -2389,8 +2463,9 @@ function inferFieldsIfMissing(obj){
     hideSalvar();
     try{ new MutationObserver(hideSalvar).observe(document.body,{childList:true,subtree:true}); }catch(_){}
 
-    // Neutraliza handlers antigos de click que usam fetch
     var submitBtn = form.querySelector('button[type=submit], input[type=submit]') || null;
+
+    // Neutraliza handlers legados que fazem fetch
     if(submitBtn){
       try{ submitBtn.onclick = null; }catch(_){}
       submitBtn.addEventListener('click', function(ev){ ev.stopImmediatePropagation(); }, true);
@@ -2398,17 +2473,8 @@ function inferFieldsIfMissing(obj){
 
     var waiting=false, tmr=null;
 
-    function thankAndRedirect(){
-      try{
-        if(submitBtn){
-          if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviado — Obrigado!';
-          else submitBtn.value='Enviado — Obrigado!';
-        }
-      }catch(_){}
-      setTimeout(function(){ window.location.href='https://www.actecmax.com.br'; }, 3500);
-    }
     function finishUI(ok){
-      Array.from(form.querySelectorAll('input[type=file][data-disabled-during-submit="1"]')).forEach(function(inp){
+      $all('input[type=file][data-disabled-during-submit=\"1\"]', form).forEach(function(inp){
         inp.disabled=false; inp.removeAttribute('data-disabled-during-submit');
       });
       if(submitBtn){
@@ -2423,45 +2489,45 @@ function inferFieldsIfMissing(obj){
     }
     function armTimeout(){
       clearTimeout(tmr);
-      tmr=setTimeout(function(){ if(waiting){ waiting=false; finishUI(true); thankAndRedirect(); } }, 20000);
+      tmr=setTimeout(function(){ if(waiting){ waiting=false; finishUI(true); showDone(); } }, 25000);
     }
 
-    // Mensagens do GAS
-    window.addEventListener('message', function(ev){
+    // Resposta do GAS
+    on(window,'message',function(ev){
       if(!waiting) return;
-      if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) { clearTimeout(tmr); waiting=false; finishUI(true); thankAndRedirect(); }
+      if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) { clearTimeout(tmr); waiting=false; finishUI(true); showDone(); }
       if (ev &&  ev.data==='ACTEC_ERR')                  { clearTimeout(tmr); waiting=false; finishUI(false); alert('Houve um erro no processamento.'); }
     });
-    iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); thankAndRedirect(); });
-    iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); });
+    on(iframe,'load', function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); showDone(); });
+    on(iframe,'error',function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); });
 
     // SUBMIT: iframe + anexos base64
-    form.addEventListener('submit', function(ev){
+    on(form,'submit',function(ev){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
 
-      // Gera _html e _pairs_json se existirem helpers
+      // Campos auxiliares
       try{
         if(typeof renderEmailHtml==='function'){
-          var h=form.querySelector('input[name="_html"]'); if(!h){ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }
+          var h=form.querySelector('input[name=\"_html\"]'); if(!h){ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }
           h.value = renderEmailHtml(form);
         }
         if(typeof collectPairs==='function'){
-          var j=form.querySelector('input[name="_pairs_json"]'); if(!j){ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }
+          var j=form.querySelector('input[name=\"_pairs_json\"]'); if(!j){ j=document.createElement('input'); j.type='hidden'; j.name='_pairs_json'; form.appendChild(j); }
           j.value = JSON.stringify(collectPairs(form));
         }
       }catch(_){}
-
-      var ts=form.querySelector('input[name="_submitted_at"]');
+      var ts=form.querySelector('input[name=\"_submitted_at\"]');
       if(!ts){ ts=document.createElement('input'); ts.type='hidden'; ts.name='_submitted_at'; form.appendChild(ts); }
       ts.value = new Date().toISOString();
 
-      var files = Array.from(form.querySelectorAll('input[type=file]'));
+      var files = $all('input[type=file]', form);
       waiting=true;
       if(submitBtn){
         submitBtn.disabled=true;
         if(submitBtn.tagName==='BUTTON') submitBtn.textContent='Enviando…';
         else submitBtn.value='Enviando…';
       }
+      showSending();
 
       if(!files.length){ armTimeout(); HTMLFormElement.prototype.submit.call(form); return; }
 
