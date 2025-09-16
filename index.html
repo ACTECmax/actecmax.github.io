@@ -2348,6 +2348,13 @@ function inferFieldsIfMissing(obj){
     }, true); // captura para rodar antes dos outros
   });
 })();
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('button, input[type=button], a').forEach(function(el){
+    var t=(el.textContent||el.value||'').trim().toLowerCase();
+    if(t==='salvar'){ el.style.display='none'; el.setAttribute('aria-hidden','true'); }
+  });
+});
 </script>
 
 </body>
