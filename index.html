@@ -2176,7 +2176,7 @@ function inferFieldsIfMissing(obj){
   const ITEMS = [
     {key:"contrato_social", label:"Contrato Social"},
     {key:"cartao_cnpj", label:"Cartão CNPJ"},
-    {key:"inscricao_estadual", label:"Inscrição Estadual"},
+    {key:"inscricao_estadual", label:"Documento do Responsável"},
     {key:"comprovante_endereco", label:"Comprovante de Endereço"},
     {key:"outros", label:"Outros"}
   ];
@@ -2329,71 +2329,6 @@ function inferFieldsIfMissing(obj){
   }
 })();
 </script>
-<script>
-(function(){
-  "use strict";
-  // Guarda anti-refresh só DURANTE o envio (não mexe em layout/fluxo do botão)
-  var sending = false, timer = null, oldTitle = document.title;
 
-  function startGuards(){
-    if (sending) return;
-    sending = true;
-    window.addEventListener("beforeunload", beforeUnloadHandler);
-    document.addEventListener("keydown", keyBlock, true);
-    // (opcional) mostrar "Enviando…" no título da aba:
-    // document.title = "Enviando… • " + oldTitle;
-  }
-  function stopGuards(){
-    if (!sending) return;
-    sending = false;
-    window.removeEventListener("beforeunload", beforeUnloadHandler);
-    document.removeEventListener("keydown", keyBlock, true);
-    clearTimeout(timer);
-    document.title = oldTitle;
-  }
-  function beforeUnloadHandler(e){
-    if (!sending) return;
-    e.preventDefault();
-    e.returnValue = ""; // prompt nativo: "Tem certeza que deseja sair?"
-  }
-  function keyBlock(e){
-    if (!sending) return;
-    var k = e.key || "";
-    if (k === "F5" || e.keyCode === 116 || (k.toLowerCase() === "r" && (e.ctrlKey || e.metaKey))){
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  // Aciona quando sua form envia (NÃO cancela o submit!)
-  document.addEventListener("submit", function(ev){
-    var f = ev.target;
-    // Limita à sua ficha (id=cadastroForm) ou forms que usam o iframe de envio
-    if (!(f && (f.id === "cadastroForm" || f.getAttribute("target") === "submitFrame"))) return;
-    startGuards();
-    clearTimeout(timer);
-    // Fallback: destrava mesmo se o iframe não disparar 'load'
-    timer = setTimeout(stopGuards, 20000); // 20s de tolerância
-  }, true);
-
-  // Desarma quando o Apps Script responde (postMessage do doPost)
-  window.addEventListener("message", function(ev){
-    if (!ev) return;
-    if (ev.data === "ACTEC_OK" || ev.data === "OK" || ev.data === "ACTEC_ERR"){
-      stopGuards();
-    }
-  });
-
-  // Fallback extra: se existir o iframe de envio, usa 'load'/'error' para destravar
-  window.addEventListener("load", function(){
-    var iframe = document.getElementById("submitFrame") || document.querySelector('iframe[name="submitFrame"]');
-    if (!iframe) return;
-    iframe.addEventListener("load",  stopGuards);
-    iframe.addEventListener("error", stopGuards);
-  });
-})();
-</script>
-
-</script>
 </body>
 </html>
