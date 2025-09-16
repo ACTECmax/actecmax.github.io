@@ -2566,6 +2566,31 @@ function inferFieldsIfMissing(obj){
   });
 })();
 </script>
+<style>
+  /* esconde por atributos comuns, sem afetar submit */
+  [id*="salvar" i]:not([type="submit"]),
+  [class*="salvar" i]:not([type="submit"]),
+  [title*="salvar" i],
+  [aria-label*="salvar" i] { display:none !important; }
+</style>
+<script>
+(function(){
+  function hideSalvar(){
+    var scope = document.querySelector('.actions-footer') || document;
+    (scope.querySelectorAll('button, a, [role="button"], input[type=button], .btn, .button')||[]).forEach(function(el){
+      var txt = (el.textContent||el.value||el.title||el.getAttribute('aria-label')||'').toLowerCase();
+      var isSubmit = (el.tagName==='BUTTON' && (el.type===''||el.type==='submit')) || (el.tagName==='INPUT' && el.type==='submit');
+      var onclick = (el.getAttribute('onclick')||'').toLowerCase();
+      var idc = (el.id||'').toLowerCase(), cls=(el.className||'').toLowerCase();
+      if (!isSubmit && (txt.includes('salvar') || onclick.includes('salvar(') || idc.includes('salvar') || cls.includes('salvar') || txt.includes('gravar'))) {
+        el.style.display='none'; el.setAttribute('aria-hidden','true');
+      }
+    });
+  }
+  hideSalvar();
+  try { new MutationObserver(hideSalvar).observe(document.body,{childList:true,subtree:true}); } catch(_){}
+})();
+</script>
 
 </body>
 </html>
