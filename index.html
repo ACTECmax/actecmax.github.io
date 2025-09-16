@@ -2331,7 +2331,7 @@ function inferFieldsIfMissing(obj){
 </script>
 
 
-<script id="actecmax-iframe-submit-v4">
+<script id="actecmax-iframe-submit-v5">
 (function(){"use strict";
   var EXEC = "https://script.google.com/macros/s/AKfycbzTahtL4J7SBb1MTtOjkS3Kxht77upE0K4c0ipf0vttpCplHkeQcP0db0cDMzeQR-4C/exec";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded", fn); }
@@ -2339,7 +2339,7 @@ function inferFieldsIfMissing(obj){
     var form = document.getElementById('cadastroForm') || document.querySelector('form');
     if(!form) return;
 
-    // Garante envio via iframe (sem CORS)
+    // Submissão por iframe (sem CORS)
     form.setAttribute('action', EXEC);
     form.setAttribute('method','POST');
     form.setAttribute('enctype','multipart/form-data');
@@ -2355,43 +2355,42 @@ function inferFieldsIfMissing(obj){
       form.appendChild(iframe);
     }
 
-    // Esconder APENAS o botão SALVAR (robusto, inclui <a>), sem tocar em Enviar/Limpar/Imprimir
+    // ====== ESCONDER APENAS "Salvar" (robusto) ======
     function isSubmitButton(el){
       if(!el) return false;
       var tag=(el.tagName||'').toUpperCase();
-      if(tag==='BUTTON'){
-        var t=(el.getAttribute('type')||'submit').toLowerCase();
-        return t==='submit';
-      }
-      if(tag==='INPUT'){
-        return (el.type||'').toLowerCase()==='submit';
-      }
+      if(tag==='BUTTON'){ var t=(el.getAttribute('type')||'submit').toLowerCase(); return t==='submit'; }
+      if(tag==='INPUT'){ return (el.type||'').toLowerCase()==='submit'; }
       return false;
+    }
+    function norm(t){
+      return String(t||'').replace(/\s+/g,' ').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
+    }
+    function findClickable(el){
+      return el.closest('button, a, [role="button"], input[type=button], .btn, .button') || el;
     }
     function hideSalvar(){
       try{
         var scope = document.querySelector('.actions-footer') || document;
-        scope.querySelectorAll('button, input[type=button], a').forEach(function(el){
-          var label=(el.textContent||el.value||'').replace(/\s+/g,' ').trim().toLowerCase();
+        scope.querySelectorAll('*').forEach(function(el){
+          var label = norm(el.textContent || el.value || '');
           if(label === 'salvar'){
-            // nunca esconder se for submit
-            if(isSubmitButton(el)) return;
-            el.style.display='none';
-            el.setAttribute('aria-hidden','true');
+            var target = findClickable(el);
+            var type = (target.getAttribute && (target.getAttribute('type')||'').toLowerCase()) || '';
+            var isSubmit = (target.tagName==='INPUT' && type==='submit') || (target.tagName==='BUTTON' && (type==='' || type==='submit'));
+            if(!isSubmit){
+              target.style.display='none';
+              target.setAttribute('aria-hidden','true');
+            }
           }
         });
       }catch(_){}
     }
     hideSalvar();
-    // Se o rodapé for re-renderizado, esconde de novo
-    try{
-      var mo = new MutationObserver(function(){ hideSalvar(); });
-      mo.observe(document.body, {childList:true, subtree:true});
-    }catch(_){}
+    try{ new MutationObserver(hideSalvar).observe(document.body,{childList:true,subtree:true}); }catch(_){}
 
+    // Neutraliza handlers antigos de click que usam fetch
     var submitBtn = form.querySelector('button[type=submit], input[type=submit]') || null;
-
-    // Anula antigos listeners de clique que disparam fetch
     if(submitBtn){
       try{ submitBtn.onclick = null; }catch(_){}
       submitBtn.addEventListener('click', function(ev){ ev.stopImmediatePropagation(); }, true);
@@ -2427,7 +2426,7 @@ function inferFieldsIfMissing(obj){
       tmr=setTimeout(function(){ if(waiting){ waiting=false; finishUI(true); thankAndRedirect(); } }, 20000);
     }
 
-    // Resposta do Apps Script
+    // Mensagens do GAS
     window.addEventListener('message', function(ev){
       if(!waiting) return;
       if (ev && (ev.data==='ACTEC_OK' || ev.data==='OK')) { clearTimeout(tmr); waiting=false; finishUI(true); thankAndRedirect(); }
@@ -2436,11 +2435,11 @@ function inferFieldsIfMissing(obj){
     iframe.addEventListener('load',  function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); thankAndRedirect(); });
     iframe.addEventListener('error', function(){ if(!waiting) return; clearTimeout(tmr); waiting=false; finishUI(true); });
 
-    // Intercepta submit (sem fetch)
+    // SUBMIT: iframe + anexos base64
     form.addEventListener('submit', function(ev){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
 
-      // Campos auxiliares
+      // Gera _html e _pairs_json se existirem helpers
       try{
         if(typeof renderEmailHtml==='function'){
           var h=form.querySelector('input[name="_html"]'); if(!h){ h=document.createElement('input'); h.type='hidden'; h.name='_html'; form.appendChild(h); }
@@ -2451,6 +2450,7 @@ function inferFieldsIfMissing(obj){
           j.value = JSON.stringify(collectPairs(form));
         }
       }catch(_){}
+
       var ts=form.querySelector('input[name="_submitted_at"]');
       if(!ts){ ts=document.createElement('input'); ts.type='hidden'; ts.name='_submitted_at'; form.appendChild(ts); }
       ts.value = new Date().toISOString();
